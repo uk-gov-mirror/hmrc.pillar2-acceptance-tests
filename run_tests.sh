@@ -1,48 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ENV="${ENVIRONMENT:=local}"
-EDGE_BIN="/usr/bin/microsoft-edge"
+WORKSPACE="${WORKSPACE:-$HOME/workspace}"
+EDGE_BIN="$WORKSPACE/microsoft-edge-stable/microsoft-edge"
+DRIVER_BIN="$WORKSPACE/msedgedriver"
 
-# Function to install Microsoft Edge if missing
-install_edge_browser() {
-  echo "Checking for Microsoft Edge browser..."
-  if ! command -v microsoft-edge &> /dev/null; then
-    echo "Microsoft Edge not found. Installing..."
-    wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
-    sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main"
-    sudo apt-get update
-    sudo apt-get install -y microsoft-edge-stable
-  else
-    echo "Microsoft Edge is already installed."
-  fi
-}
+mkdir -p "$WORKSPACE"
 
-# Function to install matching EdgeDriver
-install_edge_driver() {
-  echo "Detecting Microsoft Edge version..."
+# 1. Install Microsoft Edge locally if missing
+if [ ! -f "$EDGE_BIN" ]; then
+  echo "Downloading Microsoft Edge..."
+  EDGE_URL="https://msedgeseleniumstorage.blob.core.windows.net/edge/edge_linux64.zip"
+  wget -q "$EDGE_URL" -O "$WORKSPACE/edge.zip"
+  unzip -o "$WORKSPACE/edge.zip" -d "$WORKSPACE/microsoft-edge-stable"
+  rm "$WORKSPACE/edge.zip"
+  chmod +x "$EDGE_BIN"
+else
+  echo "Edge browser already installed locally."
+fi
+
+# 2. Install matching EdgeDriver locally
+if [ ! -f "$DRIVER_BIN" ]; then
   EDGE_VERSION=$("$EDGE_BIN" --version | awk '{print $3}')
-  echo "Installed Edge version: $EDGE_VERSION"
+  DRIVER_URL="https://msedgedriver.azureedge.net/${EDGE_VERSION}/edgedriver_linux64.zip"
+  echo "Downloading EdgeDriver $EDGE_VERSION..."
+  wget -q "$DRIVER_URL" -O "$WORKSPACE/edgedriver.zip"
+  unzip -o "$WORKSPACE/edgedriver.zip" -d "$WORKSPACE"
+  chmod +x "$DRIVER_BIN"
+  rm "$WORKSPACE/edgedriver.zip"
+else
+  echo "EdgeDriver already installed locally."
+fi
 
-  DRIVER_BASE_URL="https://msedgedriver.azureedge.net"
-  DRIVER_URL="$DRIVER_BASE_URL/${EDGE_VERSION}/edgedriver_linux64.zip"
+# 3. Add local binaries to PATH
+export PATH="$WORKSPACE:$PATH"
 
-  echo "Downloading matching EdgeDriver from: $DRIVER_URL"
-  wget -q "$DRIVER_URL" -O edgedriver.zip
-
-  echo "Extracting EdgeDriver..."
-  unzip -o edgedriver.zip -d edgedriver
-  sudo mv edgedriver/msedgedriver /usr/local/bin/msedgedriver
-  sudo chmod +x /usr/local/bin/msedgedriver
-  rm -rf edgedriver.zip edgedriver
-
-  echo "EdgeDriver installed successfully at /usr/local/bin/msedgedriver"
-}
-
-# --- MAIN EXECUTION ---
-install_edge_browser
-install_edge_driver
-
-echo "Running sbt tests..."
-sbt clean -Dbrowser="edge" -Denvironment="${ENV}" \
+# 4. Run sbt tests
+sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT:-local}" \
   "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
