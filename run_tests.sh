@@ -13,50 +13,59 @@ TMP_JSON=$(mktemp)
 curl -s -o "$TMP_JSON" "$MIRROR_URL"
 
 # Extract the latest Linux x64 stable .deb URL and version using jq
-LATEST_DEB_URL=$(jq -r '
+LATEST_DEB_INFO=$(jq -r '
   .[] | select(.Product=="Stable") |
   .Releases[] | select(.Platform=="Linux" and .Architecture=="x64") |
-  "\(.Artifacts[] | select(.ArtifactName=="deb") | .Location) \(.ProductVersion)"' "$TMP_JSON" | sort -V | tail -n1)
-
+  .Artifacts[] | select(.ArtifactName=="deb") |
+  "\(.Location) \(.ProductVersion)"' "$TMP_JSON" | sort -V | tail -n1)
 
 rm "$TMP_JSON"
 
-if [ -z "$LATEST_DEB_URL" ]; then
+if [ -z "$LATEST_DEB_INFO" ]; then
   echo "Error: Could not find Edge .deb URL in JSON."
   exit 1
 fi
 
-DEB_URL=$(echo "$LATEST_DEB_URL" | awk '{print $1}')
-LATEST_VERSION=$(echo "$LATEST_DEB_URL" | awk '{print $2}')
+DEB_URL=$(echo "$LATEST_DEB_INFO" | awk '{print $1}')
+LATEST_VERSION=$(echo "$LATEST_DEB_INFO" | awk '{print $2}')
 
-# Local install directory
+# User-space install directory
 EDGE_HOME="$HOME/.local/microsoft-edge-$LATEST_VERSION"
-EDGE_BIN="$EDGE_HOME/usr/bin/microsoft-edge"
+mkdir -p "$EDGE_HOME"
 
-# Check if Edge is installed locally
-if [ -x "$EDGE_BIN" ]; then
-    echo "Microsoft Edge $LATEST_VERSION already installed locally."
+# Check if Edge is already installed locally
+if [ -x "$EDGE_HOME/usr/bin/microsoft-edge" ]; then
+    INSTALLED_VERSION=$("$EDGE_HOME/usr/bin/microsoft-edge" --version | awk '{print $3}')
+    if [ "$INSTALLED_VERSION" = "$LATEST_VERSION" ]; then
+        echo "Microsoft Edge $INSTALLED_VERSION is already installed in user space. Skipping installation."
+    else
+        echo "Updating Microsoft Edge to $LATEST_VERSION in user space."
+        INSTALL_EDGE=true
+    fi
 else
-    echo "Installing Microsoft Edge $LATEST_VERSION locally..."
-
-    TMP_DEB="/tmp/$(basename $DEB_URL)"
-    curl -L -o "$TMP_DEB" "$DEB_URL"
-
-    mkdir -p "$EDGE_HOME"
-    # Extract .deb contents
-    ar x "$TMP_DEB" --output="$EDGE_HOME"
-    tar -xf "$EDGE_HOME/data.tar.xz" -C "$EDGE_HOME"
-
-    rm "$TMP_DEB" "$EDGE_HOME/control.tar.*" "$EDGE_HOME/data.tar.*" "$EDGE_HOME/debian-binary"
-
-    echo "Microsoft Edge $LATEST_VERSION installed in $EDGE_HOME"
+    echo "Installing Microsoft Edge $LATEST_VERSION in user space."
+    INSTALL_EDGE=true
 fi
 
-# Add local Edge to PATH for this session
+if [ "$INSTALL_EDGE" = true ]; then
+    # Download the .deb to /tmp
+    DEB_FILE="/tmp/$(basename $DEB_URL)"
+    curl -L -o "$DEB_FILE" "$DEB_URL"
+
+    # Extract .deb locally
+    cd "$EDGE_HOME"
+    ar x "$DEB_FILE"  # extracts control.tar.* and data.tar.*
+    tar -xf data.tar.*  # unpack Edge files
+    rm -f control.tar.* data.tar.* "$DEB_FILE"
+
+    echo "Microsoft Edge $LATEST_VERSION installed successfully in $EDGE_HOME."
+fi
+
+# Add Edge to PATH
 export PATH="$EDGE_HOME/usr/bin:$PATH"
 
 echo "=== Starting UI tests ==="
 
 ENV="local"
 sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT:=local}" \
-  "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
+    "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
