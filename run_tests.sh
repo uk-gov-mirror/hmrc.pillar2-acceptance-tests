@@ -1,24 +1,44 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# ---- Step 0: Environment ----
+ENVIRONMENT="${ENVIRONMENT:=local}"   # default to 'local' if not set
+echo "Running acceptance tests in environment: $ENVIRONMENT"
+
 # ---- Step 1: Setup EdgeDriver ----
 DRIVER_DIR="$HOME/workspace/drivers"
 mkdir -p "$DRIVER_DIR"
 cd "$DRIVER_DIR"
 
-LATEST_VERSION=$(curl -s https://msedgedriver.azureedge.net/LATEST_STABLE)
-echo "Latest EdgeDriver version: $LATEST_VERSION"
+# Detect installed Edge version
+EDGE_VERSION=$(microsoft-edge --version | awk '{print $3}')
+MAJOR_VERSION=$(echo $EDGE_VERSION | cut -d. -f1)
+echo "Installed Edge version: $EDGE_VERSION (major: $MAJOR_VERSION)"
 
-curl -L -o msedgedriver.zip "https://msedgedriver.azureedge.net/${LATEST_VERSION}/edgedriver_linux64.zip"
+# Download matching EdgeDriver
+DRIVER_VERSION=$(curl -s "https://msedgedriver.azureedge.net/LATEST_RELEASE_$MAJOR_VERSION")
+echo "EdgeDriver version to download: $DRIVER_VERSION"
+
+curl -L -o msedgedriver.zip "https://msedgedriver.azureedge.net/${DRIVER_VERSION}/edgedriver_linux64.zip"
 unzip -o msedgedriver.zip
 chmod +x msedgedriver
 rm msedgedriver.zip
-
-echo "EdgeDriver $LATEST_VERSION is ready at $DRIVER_DIR/msedgedriver"
-
-# Add to PATH so sbt can find it
 export PATH="$DRIVER_DIR:$PATH"
 
-# ---- Step 2: Run your acceptance tests ----
-ENVIRONMENT="${ENVIRONMENT:=local}"   # default to 'local' if not set
-sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT}" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
+echo "EdgeDriver $DRIVER_VERSION is ready at $DRIVER_DIR/msedgedriver"
+
+# ---- Step 2: Verify SBT ----
+echo "Checking sbt installation..."
+which sbt
+sbt sbtVersion
+
+# ---- Step 3: Run acceptance tests ----
+echo "Running acceptance tests..."
+sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT}" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport | tee sbt.log
+
+# ---- Step 4: Confirm reports ----
+if [ -d "target/test-reports" ]; then
+  echo "Test reports generated successfully."
+else
+  echo "WARNING: No test reports found!"
+fi
