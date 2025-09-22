@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Print OS information
+echo "Checking OS information..."
+cat /etc/os-release
+
 # Workspace and cache directories
 WORKSPACE="${WORKSPACE:-$HOME/workspace}"
 CACHE_DIR="${WORKSPACE}/.cache"
@@ -25,7 +29,7 @@ fi
 # 2. Install matching EdgeDriver if missing
 if [ ! -f "$DRIVER_BIN" ]; then
   EDGE_VERSION=$("$EDGE_BIN" --version | awk '{print $3}')
-  DRIVER_URL="https://msedgedriver.azureedge.net/${EDGE_VERSION}/edgedriver_linux64.zip"
+  DRIVER_URL="https://msedgedriver.microsoft.com/${EDGE_VERSION}/edgedriver_linux64.zip"
   echo "Downloading EdgeDriver $EDGE_VERSION..."
   wget -q "$DRIVER_URL" -O "$CACHE_DIR/edgedriver.zip" || { echo "Failed to download EdgeDriver"; exit 1; }
   unzip -qq -o "$CACHE_DIR/edgedriver.zip" -d "$CACHE_DIR"
