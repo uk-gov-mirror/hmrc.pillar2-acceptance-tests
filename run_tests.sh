@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -xeuo pipefail
 
 WORKSPACE="${WORKSPACE:-$HOME/workspace}"
 EDGE_DIR="$WORKSPACE/microsoft-edge"
