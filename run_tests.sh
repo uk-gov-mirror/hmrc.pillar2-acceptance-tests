@@ -16,8 +16,8 @@ curl -s -o "$TMP_JSON" "$MIRROR_URL"
 LATEST_DEB_URL=$(jq -r '
   .[] | select(.Product=="Stable") |
   .Releases[] | select(.Platform=="Linux" and .Architecture=="x64") |
-  .Artifacts[] | select(.ArtifactName=="deb") |
-  "\(.Location) \(.ProductVersion)"' "$TMP_JSON" | sort -V | tail -n1)
+  "\(.Artifacts[] | select(.ArtifactName=="deb") | .Location) \(.ProductVersion)"' "$TMP_JSON" | sort -V | tail -n1)
+
 
 rm "$TMP_JSON"
 
