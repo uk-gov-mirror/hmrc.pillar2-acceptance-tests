@@ -1,34 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ---- Step 1: Setup directories ----
-WORK_DIR="$HOME/workspace/drivers"
-mkdir -p "$WORK_DIR"
-cd "$WORK_DIR"
+# ---- Step 0: Check installed Edge version ----
+EDGE_BINARY="${EDGE_BINARY:-/usr/bin/microsoft-edge}"  # default path
+if [[ ! -f "$EDGE_BINARY" ]]; then
+    echo "Error: Edge binary not found at $EDGE_BINARY"
+    exit 1
+fi
 
-# ---- Step 2: Get latest EdgeDriver version ----
-EDGE_LATEST=$(curl -s https://msedgedriver.azureedge.net/LATEST_STABLE)
-echo "Latest EdgeDriver version: $EDGE_LATEST"
+EDGE_VERSION=$("$EDGE_BINARY" --version | awk '{print $3}')
+echo "Detected Microsoft Edge version: $EDGE_VERSION"
 
-# ---- Step 3: Download EdgeDriver ----
-EDGE_DRIVER_ZIP="edgedriver_linux64.zip"
-curl -L -o "$EDGE_DRIVER_ZIP" "https://msedgedriver.azureedge.net/${EDGE_LATEST}/edgedriver_linux64.zip"
-unzip -o "$EDGE_DRIVER_ZIP"
+# Extract major.minor.build version for driver download
+EDGE_DRIVER_VERSION=$(echo "$EDGE_VERSION" | awk -F. '{print $1"."$2"."$3}')
+
+# ---- Step 1: Setup EdgeDriver ----
+DRIVER_DIR="$HOME/workspace/drivers"
+mkdir -p "$DRIVER_DIR"
+cd "$DRIVER_DIR"
+
+# Download matching EdgeDriver
+EDGEDRIVER_URL="https://msedgedriver.azureedge.net/${EDGE_DRIVER_VERSION}/edgedriver_linux64.zip"
+echo "Downloading EdgeDriver from $EDGEDRIVER_URL"
+curl -L -o msedgedriver.zip "$EDGEDRIVER_URL"
+unzip -o msedgedriver.zip
 chmod +x msedgedriver
-rm "$EDGE_DRIVER_ZIP"
-echo "EdgeDriver $EDGE_LATEST ready at $WORK_DIR/msedgedriver"
+rm msedgedriver.zip
 
-# ---- Step 4: Download portable Edge browser ----
-EDGE_PORTABLE_DIR="$WORK_DIR/microsoft-edge"
-mkdir -p "$EDGE_PORTABLE_DIR"
+echo "EdgeDriver $EDGE_DRIVER_VERSION is ready at $DRIVER_DIR/msedgedriver"
 
-EDGE_TAR="microsoft-edge-${EDGE_LATEST}-linux-x64.tar.bz2"
-curl -L -o "$EDGE_TAR" "https://msedgedriver.azureedge.net/${EDGE_LATEST}/edgedriver-linux64.zip"
+# Add to PATH so sbt can find it
+export PATH="$DRIVER_DIR:$PATH"
 
-# ---- Step 5: Update PATH ----
-export PATH="$WORK_DIR:$PATH"
-export EDGE_BINARY="$EDGE_PORTABLE_DIR/microsoft-edge"
-
-# ---- Step 6: Run acceptance tests ----
-ENVIRONMENT="${ENVIRONMENT:=local}"
-sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT}" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
+# ---- Step 2: Run your acceptance tests ----
+ENVIRONMENT="${ENVIRONMENT:=local}"   # default to 'local'
+sbt clean \
+    -Dbrowser="edge" \
+    -Dedge.binary="$EDGE_BINARY" \
+    -Denvironment="${ENVIRONMENT}" \
+    "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
