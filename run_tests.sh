@@ -1,45 +1,62 @@
-#!/usr/bin/env bash
-set -xeuo pipefail
+#!/bin/bash
+set -e
 
-WORKSPACE="${WORKSPACE:-$HOME/workspace}"
-EDGE_DIR="$WORKSPACE/microsoft-edge"
-DRIVER_BIN="$WORKSPACE/msedgedriver"
+echo "=== Setting up Microsoft Edge (user-space) for UI tests ==="
 
-mkdir -p "$WORKSPACE" "$EDGE_DIR"
+# Metadata URL (mirror)
+MIRROR_URL="https://artefacts.tax.service.gov.uk/ui/api/v1/download/contentBrowsing/edge-browser/api/products/"
 
-LATEST_EDGE_VERSION="140.0.3485.81" # fallback hardcoded version
+# Temporary file to store JSON
+TMP_JSON=$(mktemp)
 
-# 1. Check if Microsoft URL is reachable
-MICROSOFT_URL="https://msedgedriver.microsoft.com/140.0.3485.81/edgedriver_linux64.zip"
+# Fetch JSON metadata
+curl -s -o "$TMP_JSON" "$MIRROR_URL"
 
-echo "Checking network access to Microsoft EdgeDriver..."
-if curl -s --head --connect-timeout 5 "$MICROSOFT_URL" | grep "200 OK" > /dev/null; then
-    echo "✅ Network access to Microsoft confirmed."
-    NETWORK_OK=true
-else
-    echo "❌ Unable to reach Microsoft EdgeDriver site - likely a network block."
-    NETWORK_OK=false
+# Extract the latest Linux x64 stable .deb URL and version using jq
+LATEST_DEB_URL=$(jq -r '
+  .[] | select(.Product=="Stable") |
+  .Releases[] | select(.Platform=="Linux" and .Architecture=="x64") |
+  .Artifacts[] | select(.ArtifactName=="deb") |
+  "\(.Location) \(.ProductVersion)"' "$TMP_JSON" | sort -V | tail -n1)
+
+rm "$TMP_JSON"
+
+if [ -z "$LATEST_DEB_URL" ]; then
+  echo "Error: Could not find Edge .deb URL in JSON."
+  exit 1
 fi
 
-# 2. Choose source URL
-if [ "$NETWORK_OK" = true ]; then
-    DRIVER_URL="$MICROSOFT_URL"
+DEB_URL=$(echo "$LATEST_DEB_URL" | awk '{print $1}')
+LATEST_VERSION=$(echo "$LATEST_DEB_URL" | awk '{print $2}')
+
+# Local install directory
+EDGE_HOME="$HOME/.local/microsoft-edge-$LATEST_VERSION"
+EDGE_BIN="$EDGE_HOME/usr/bin/microsoft-edge"
+
+# Check if Edge is installed locally
+if [ -x "$EDGE_BIN" ]; then
+    echo "Microsoft Edge $LATEST_VERSION already installed locally."
 else
-    echo "Falling back to internal artefact repository..."
-    DRIVER_URL="https://artefacts.tax.service.gov.uk/msedgedriver/140.0.3485.81/edgedriver_linux64.zip"
+    echo "Installing Microsoft Edge $LATEST_VERSION locally..."
+
+    TMP_DEB="/tmp/$(basename $DEB_URL)"
+    curl -L -o "$TMP_DEB" "$DEB_URL"
+
+    mkdir -p "$EDGE_HOME"
+    # Extract .deb contents
+    ar x "$TMP_DEB" --output="$EDGE_HOME"
+    tar -xf "$EDGE_HOME/data.tar.xz" -C "$EDGE_HOME"
+
+    rm "$TMP_DEB" "$EDGE_HOME/control.tar.*" "$EDGE_HOME/data.tar.*" "$EDGE_HOME/debian-binary"
+
+    echo "Microsoft Edge $LATEST_VERSION installed in $EDGE_HOME"
 fi
 
-# 3. Download EdgeDriver
-if [ ! -f "$DRIVER_BIN" ]; then
-    echo "Downloading EdgeDriver version: $LATEST_EDGE_VERSION"
-    if ! wget --quiet --timeout=15 --tries=2 "$DRIVER_URL" -O "$WORKSPACE/edgedriver.zip"; then
-        echo "ERROR: Unable to download EdgeDriver from either Microsoft or internal repo."
-        exit 1
-    fi
+# Add local Edge to PATH for this session
+export PATH="$EDGE_HOME/usr/bin:$PATH"
 
-    unzip -o "$WORKSPACE/edgedriver.zip" -d "$WORKSPACE"
-    chmod +x "$DRIVER_BIN"
-    rm "$WORKSPACE/edgedriver.zip"
-else
-    echo "EdgeDriver already installed locally."
-fi
+echo "=== Starting UI tests ==="
+
+ENV="local"
+sbt clean -Dbrowser="edge" -Denvironment="${ENVIRONMENT:=local}" \
+  "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner" testReport
