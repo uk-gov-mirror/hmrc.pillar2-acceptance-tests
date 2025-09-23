@@ -56,17 +56,20 @@ else
 fi
 
 # ------------------------
-# Export environment variables
+# Export environment variables for Scala
 # ------------------------
 export EDGE_BINARY="$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
-export WEBDRIVER_EDGE_DRIVER="$DRIVER_INSTALL_DIR/msedgedriver"
+export BROWSER="edge"
 export PATH="$DRIVER_INSTALL_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
-export EDGE_VERSION="$EDGE_VERSION"
+
+# Also set the system property for Selenium
+export JAVA_TOOL_OPTIONS="-Dwebdriver.edge.driver=$DRIVER_INSTALL_DIR/msedgedriver $JAVA_TOOL_OPTIONS"
 
 echo "Environment configured:"
 echo "  EDGE_BINARY=$EDGE_BINARY"
-echo "  WEBDRIVER_EDGE_DRIVER=$WEBDRIVER_EDGE_DRIVER"
+echo "  BROWSER=$BROWSER"
 echo "  PATH=$PATH"
+echo "  JAVA_TOOL_OPTIONS=$JAVA_TOOL_OPTIONS"
 
 echo "=== Edge setup complete ==="
 
@@ -77,6 +80,6 @@ ENVIRONMENT="${ENVIRONMENT:=local}"
 
 echo "Starting tests with SBT..."
 sbt clean \
-  -Dbrowser="edge" \
+  -Dbrowser="$BROWSER" \
   -Denvironment="$ENVIRONMENT" \
   "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"

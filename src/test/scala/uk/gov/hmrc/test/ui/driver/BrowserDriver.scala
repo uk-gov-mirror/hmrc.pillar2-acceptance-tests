@@ -2,38 +2,40 @@ package uk.gov.hmrc.test.ui.driver
 
 import com.typesafe.scalalogging.LazyLogging
 import org.openqa.selenium.WebDriver
-import uk.gov.hmrc.selenium.webdriver.Driver
+import org.openqa.selenium.chrome.ChromeDriver
+import org.openqa.selenium.edge.{EdgeDriver, EdgeOptions}
+import org.openqa.selenium.firefox.FirefoxDriver
 
-object BrowserDriver extends LazyLogging {
+trait BrowserDriver extends LazyLogging {
 
-  private val browserName = sys.props.getOrElse("browser", "'browser' system property not set")
+  private val browserName = sys.props.getOrElse("browser", "chrome").toLowerCase
   private val jenkinsHome = sys.env.get("JENKINS_HOME")
+  private val edgeVersion = sys.env.getOrElse("EDGE_VERSION", "138.0.3351.95")
 
-  // These are set by the setup-edge.sh script
-  private val edgeDriverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
-  private val edgeBinaryPath = sys.env.get("EDGE_BINARY")
-  private val edgeVersion = sys.env.getOrElse("EDGE_VERSION", "unknown")
+  // Configure Edge for Jenkins
+  if (browserName == "edge" && jenkinsHome.isDefined) {
+    val edgeDriverPath = s"$jenkinsHome/.local/edgedriver-$edgeVersion/msedgedriver"
+    val edgeBinaryPath = s"$jenkinsHome/.local/microsoft-edge-$edgeVersion/microsoft-edge"
 
-  if (browserName.equalsIgnoreCase("edge")) {
-    (edgeDriverPath, edgeBinaryPath) match {
-      case (Some(driverPath), Some(binaryPath)) =>
-        System.setProperty("webdriver.edge.driver", driverPath)
-        System.setProperty("webdriver.edge.binary", binaryPath)
-        System.setProperty("selenium.manager.enabled", "false")
+    System.setProperty("webdriver.edge.driver", edgeDriverPath)
+    System.setProperty("selenium.manager.enabled", "false") // disable online lookup
 
-        logger.info(s"Running Edge $edgeVersion on Jenkins")
-        logger.info(s"EdgeDriver path: $driverPath")
-        logger.info(s"Edge binary path: $binaryPath")
-
-      case _ =>
-        throw new IllegalStateException(
-          s"Edge browser selected but required environment variables are missing. " +
-            s"Ensure setup-edge.sh script has run before tests."
-        )
-    }
+    logger.info(s"Running Edge $edgeVersion on Jenkins")
+    logger.info(s"EdgeDriver path: $edgeDriverPath")
+    logger.info(s"Edge binary path: $edgeBinaryPath")
   } else {
-    logger.info(s"Instantiating Browser: $browserName (local or non-Jenkins environment)")
+    logger.info(s"Instantiating browser: $browserName (local or non-Jenkins environment)")
   }
 
-  lazy val driver: WebDriver = Driver.instance
+  // Lazy WebDriver instantiation
+  lazy val driver: WebDriver = browserName match {
+    case "firefox" =>
+      new FirefoxDriver()
+    case "edge" =>
+      val options = new EdgeOptions()
+      sys.env.get("EDGE_BINARY").foreach(options.setBinary)
+      new EdgeDriver(options)
+    case _ => // default to Chrome
+      new ChromeDriver()
+  }
 }
