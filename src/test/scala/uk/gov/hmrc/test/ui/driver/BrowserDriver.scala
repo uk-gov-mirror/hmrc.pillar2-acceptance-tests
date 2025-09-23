@@ -6,22 +6,31 @@ import uk.gov.hmrc.selenium.webdriver.Driver
 
 object BrowserDriver extends LazyLogging {
 
-  private val browserName = sys.props.getOrElse("browser", "'browser' System property not set")
+  private val browserName = sys.props.getOrElse("browser", "'browser' system property not set")
   private val jenkinsHome = sys.env.get("JENKINS_HOME")
-  private val edgeVersion = sys.env.getOrElse("EDGE_VERSION", "138.0.3351.95")
 
-  if (browserName.equalsIgnoreCase("edge") && jenkinsHome.isDefined) {
-    val edgeDriverPath = s"$jenkinsHome/.local/edgedriver-$edgeVersion/msedgedriver"
-    val edgeBinaryPath = s"$jenkinsHome/.local/microsoft-edge-$edgeVersion/microsoft-edge"
+  // These are set by the setup-edge.sh script
+  private val edgeDriverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
+  private val edgeBinaryPath = sys.env.get("EDGE_BINARY")
+  private val edgeVersion = sys.env.getOrElse("EDGE_VERSION", "unknown")
 
-    System.setProperty("webdriver.edge.driver", edgeDriverPath)
-    System.setProperty("webdriver.edge.binary", edgeBinaryPath)
-    // Disable SeleniumManager to avoid online lookup
-    System.setProperty("selenium.manager.enabled", "false")
+  if (browserName.equalsIgnoreCase("edge")) {
+    (edgeDriverPath, edgeBinaryPath) match {
+      case (Some(driverPath), Some(binaryPath)) =>
+        System.setProperty("webdriver.edge.driver", driverPath)
+        System.setProperty("webdriver.edge.binary", binaryPath)
+        System.setProperty("selenium.manager.enabled", "false")
 
-    logger.info(s"Running Edge $edgeVersion on Jenkins")
-    logger.info(s"EdgeDriver path: $edgeDriverPath")
-    logger.info(s"Edge binary path: $edgeBinaryPath")
+        logger.info(s"Running Edge $edgeVersion on Jenkins")
+        logger.info(s"EdgeDriver path: $driverPath")
+        logger.info(s"Edge binary path: $binaryPath")
+
+      case _ =>
+        throw new IllegalStateException(
+          s"Edge browser selected but required environment variables are missing. " +
+            s"Ensure setup-edge.sh script has run before tests."
+        )
+    }
   } else {
     logger.info(s"Instantiating Browser: $browserName (local or non-Jenkins environment)")
   }
