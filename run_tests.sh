@@ -11,8 +11,24 @@ EDGE_DEB_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-browser/pool
 EDGEDRIVER_ZIP_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-driver/${EDGE_VERSION}/edgedriver_linux64.zip"
 
 # Install directories
-EDGE_INSTALL_DIR="$HOME/.local/microsoft-edge-$EDGE_VERSION"
-DRIVER_DIR="$HOME/.local/edgedriver-$EDGE_VERSION"
+EDGE_INSTALL_BASE="$HOME/.local"
+DRIVER_BASE="$HOME/.local"
+
+EDGE_INSTALL_DIR="$EDGE_INSTALL_BASE/microsoft-edge-$EDGE_VERSION"
+DRIVER_DIR="$DRIVER_BASE/edgedriver-$EDGE_VERSION"
+
+# ------------------------
+# Clean up old Edge/Driver versions
+# ------------------------
+echo "Cleaning up old Edge versions..."
+for dir in "$EDGE_INSTALL_BASE"/microsoft-edge-*; do
+    [ "$dir" != "$EDGE_INSTALL_DIR" ] && rm -rf "$dir"
+done
+
+echo "Cleaning up old EdgeDriver versions..."
+for dir in "$DRIVER_BASE"/edgedriver-*; do
+    [ "$dir" != "$DRIVER_DIR" ] && rm -rf "$dir"
+done
 
 mkdir -p "$EDGE_INSTALL_DIR" "$DRIVER_DIR"
 
