@@ -6,11 +6,12 @@ echo "=== Setting up Microsoft Edge and EdgeDriver for UI tests ==="
 # ------------------------
 # Versions
 # ------------------------
-EDGE_VERSION="138.0.3351.95"
+EDGE_VERSION="138.0.3351.95"   # update to the desired version
+EDGEDRIVER_VERSION="$EDGE_VERSION"  # usually EdgeDriver version matches Edge version
 
 # Direct URLs
 EDGE_DEB_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-browser/pool/main/m/microsoft-edge-stable/microsoft-edge-stable_${EDGE_VERSION}-1_amd64.deb"
-EDGEDRIVER_ZIP_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-driver/${EDGE_VERSION}/edgedriver_linux64.zip"
+EDGEDRIVER_ZIP_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-driver/${EDGEDRIVER_VERSION}/edgedriver_linux64.zip"
 
 # Install directories
 INSTALL_BASE="$HOME/.local"
@@ -29,7 +30,7 @@ mkdir -p "$EDGE_INSTALL_DIR" "$DRIVER_INSTALL_DIR"
 # ------------------------
 # Install Edge
 # ------------------------
-if [ -d "$EDGE_INSTALL_DIR/usr" ]; then
+if [ -f "$EDGE_INSTALL_DIR/usr/bin/microsoft-edge" ]; then
     echo "Microsoft Edge $EDGE_VERSION already installed."
 else
     echo "Installing Microsoft Edge $EDGE_VERSION..."
@@ -37,6 +38,7 @@ else
     curl -sSL -o "$TMP_DEB" "$EDGE_DEB_URL"
     dpkg-deb -x "$TMP_DEB" "$EDGE_INSTALL_DIR"
     rm "$TMP_DEB"
+    chmod +x "$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
     echo "Microsoft Edge installed at $EDGE_INSTALL_DIR"
 fi
 
@@ -44,10 +46,10 @@ fi
 # Install EdgeDriver
 # ------------------------
 if [ -f "$DRIVER_INSTALL_DIR/msedgedriver" ]; then
-    echo "EdgeDriver $EDGE_VERSION already installed."
+    echo "EdgeDriver $EDGEDRIVER_VERSION already installed."
 else
-    echo "Installing EdgeDriver $EDGE_VERSION..."
-    TMP_ZIP="/tmp/edgedriver_linux64_${EDGE_VERSION}.zip"
+    echo "Installing EdgeDriver $EDGEDRIVER_VERSION..."
+    TMP_ZIP="/tmp/edgedriver_linux64_${EDGEDRIVER_VERSION}.zip"
     curl -sSL -o "$TMP_ZIP" "$EDGEDRIVER_ZIP_URL"
     unzip -o "$TMP_ZIP" -d "$DRIVER_INSTALL_DIR"
     rm "$TMP_ZIP"
@@ -56,30 +58,28 @@ else
 fi
 
 # ------------------------
-# Export environment variables for Scala
+# Export environment variables for Selenium
 # ------------------------
 export EDGE_BINARY="$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
-export BROWSER="edge"
+export WEBDRIVER_EDGE_DRIVER="$DRIVER_INSTALL_DIR/msedgedriver"
 export PATH="$DRIVER_INSTALL_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
-
-# Also set the system property for Selenium
-export JAVA_TOOL_OPTIONS="-Dwebdriver.edge.driver=$DRIVER_INSTALL_DIR/msedgedriver $JAVA_TOOL_OPTIONS"
 
 echo "Environment configured:"
 echo "  EDGE_BINARY=$EDGE_BINARY"
-echo "  BROWSER=$BROWSER"
+echo "  WEBDRIVER_EDGE_DRIVER=$WEBDRIVER_EDGE_DRIVER"
 echo "  PATH=$PATH"
-echo "  JAVA_TOOL_OPTIONS=$JAVA_TOOL_OPTIONS"
 
 echo "=== Edge setup complete ==="
 
 # ------------------------
-# Run tests
+# Run SBT tests
 # ------------------------
 ENVIRONMENT="${ENVIRONMENT:=local}"
 
 echo "Starting tests with SBT..."
 sbt clean \
-  -Dbrowser="$BROWSER" \
+  -Dbrowser="edge" \
+  -Dwebdriver.edge.driver="$WEBDRIVER_EDGE_DRIVER" \
+  -Dedge.binary="$EDGE_BINARY" \
   -Denvironment="$ENVIRONMENT" \
   "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
