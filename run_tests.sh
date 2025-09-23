@@ -72,3 +72,9 @@ export PATH="$DRIVER_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
 export EDGE_VERSION="$EDGE_VERSION"
 
 echo "=== UI environment ready ==="
+
+# ------------------------
+# Run UI tests
+# ------------------------
+ENVIRONMENT="${ENVIRONMENT:=local}"
+sbt clean -Dbrowser="edge" -Denvironment="$ENVIRONMENT" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
