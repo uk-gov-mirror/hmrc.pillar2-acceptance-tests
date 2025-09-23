@@ -3,7 +3,9 @@ set -e
 
 echo "=== Setting up Microsoft Edge (user-space) and EdgeDriver for UI tests ==="
 
+# ------------------------
 # Versions
+# ------------------------
 EDGE_VERSION="138.0.3351.95"
 
 # Direct URLs
@@ -18,7 +20,7 @@ EDGE_INSTALL_DIR="$EDGE_INSTALL_BASE/microsoft-edge-$EDGE_VERSION"
 DRIVER_DIR="$DRIVER_BASE/edgedriver-$EDGE_VERSION"
 
 # ------------------------
-# Clean up old Edge/Driver versions
+# Clean up old versions
 # ------------------------
 echo "Cleaning up old Edge versions..."
 for dir in "$EDGE_INSTALL_BASE"/microsoft-edge-*; do
@@ -67,10 +69,6 @@ fi
 export EDGE_BINARY="$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
 export WEBDRIVER_EDGE_DRIVER="$DRIVER_DIR/msedgedriver"
 export PATH="$DRIVER_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
+export EDGE_VERSION="$EDGE_VERSION"
 
-echo "=== Starting UI tests ==="
-
-ENVIRONMENT="${ENVIRONMENT:=local}"
-export EDGE_VERSION=138.0.3351.95
-# Run SBT tests
-sbt clean -Dbrowser="edge" -Denvironment="$ENVIRONMENT" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
+echo "=== UI environment ready ==="
