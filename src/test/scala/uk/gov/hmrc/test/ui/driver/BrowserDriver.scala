@@ -2,7 +2,6 @@ package uk.gov.hmrc.test.ui.driver
 
 import com.typesafe.scalalogging.LazyLogging
 import org.openqa.selenium.WebDriver
-import uk.gov.hmrc.selenium.webdriver.DriverManager
 
 trait BrowserDriver extends LazyLogging {
   logger.info(
