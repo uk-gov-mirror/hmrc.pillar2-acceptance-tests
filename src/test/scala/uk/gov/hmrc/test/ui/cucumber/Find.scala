@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.test.ui.cucumber
 
-import org.junit.Assert
 import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.{By, WebElement}
 import uk.gov.hmrc.test.ui.cucumber.Wait.fluentWait

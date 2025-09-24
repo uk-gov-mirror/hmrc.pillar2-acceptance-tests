@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.test.ui.pillar2SubmissionPages
 
-import uk.gov.hmrc.test.ui.cucumber.Find.{findByCss, findById}
+import uk.gov.hmrc.test.ui.cucumber.Find.findById
 import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object P2SubBtnMultipleAccountingPage extends PageObject {

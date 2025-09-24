@@ -18,9 +18,8 @@ package uk.gov.hmrc.test.ui.cucumber.stepdefs
 
 import io.cucumber.datatable.DataTable
 import org.openqa.selenium.By
-import uk.gov.hmrc.test.ui.cucumber.Input.{clickByCss, getAttributeOf, getTextOf}
+import uk.gov.hmrc.test.ui.cucumber.Input.{clickByCss, getTextOf}
 import uk.gov.hmrc.test.ui.cucumber._
-import uk.gov.hmrc.test.ui.pages.OnlinePaymentPages.enterEmailAndClickContinueOnEmailPage
 import uk.gov.hmrc.test.ui.pages._
 import uk.gov.hmrc.test.ui.pillar2SubmissionPages.P2SubBtnAgdKBPage
 
