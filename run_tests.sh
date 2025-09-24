@@ -34,7 +34,7 @@ if [ ! -d "$EDGE_INSTALL_DIR" ]; then
     echo "Installing Microsoft Edge $EDGE_VERSION..."
     mkdir -p "$EDGE_INSTALL_DIR"
     curl -L -o /tmp/microsoft-edge.zip \
-        "https://msedgedriver.azureedge.net/$EDGE_VERSION/microsoft-edge-$EDGE_VERSION.zip"
+        "https://artefacts.tax.service.gov.uk/artifactory/edge-browser/pool/main/m/microsoft-edge-stable/microsoft-edge-stable_${EDGE_VERSION}-1_amd64.deb"
     unzip /tmp/microsoft-edge.zip -d "$EDGE_INSTALL_DIR"
 fi
 
@@ -43,7 +43,7 @@ if [ ! -d "$DRIVER_DIR" ]; then
     echo "Installing EdgeDriver $EDGE_VERSION..."
     mkdir -p "$DRIVER_DIR"
     curl -L -o /tmp/edgedriver.zip \
-        "https://msedgedriver.azureedge.net/$EDGE_VERSION/edgedriver_linux64.zip"
+        "https://artefacts.tax.service.gov.uk/artifactory/edge-driver/${EDGE_VERSION}/edgedriver_linux64.zip"
     unzip /tmp/edgedriver.zip -d "$DRIVER_DIR"
     chmod +x "$DRIVER_DIR/msedgedriver"
 fi
