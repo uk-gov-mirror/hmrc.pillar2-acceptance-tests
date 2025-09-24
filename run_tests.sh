@@ -29,16 +29,21 @@ done
 echo "Clearing SeleniumManager cache..."
 rm -rf "$HOME/.cache/selenium"
 
-# Install Microsoft Edge
+# Download and extract Microsoft Edge
 if [ ! -d "$EDGE_INSTALL_DIR" ]; then
     echo "Installing Microsoft Edge $EDGE_VERSION..."
     mkdir -p "$EDGE_INSTALL_DIR"
-    curl -L -o /tmp/microsoft-edge.zip \
+    curl -L -o /tmp/microsoft-edge.deb \
         "https://artefacts.tax.service.gov.uk/artifactory/edge-browser/pool/main/m/microsoft-edge-stable/microsoft-edge-stable_${EDGE_VERSION}-1_amd64.deb"
-    unzip /tmp/microsoft-edge.zip -d "$EDGE_INSTALL_DIR"
+
+    # Extract .deb into install directory
+    dpkg-deb -x /tmp/microsoft-edge.deb "$EDGE_INSTALL_DIR"
 fi
 
-# Install EdgeDriver
+# Set the actual binary path
+EDGE_BINARY="$EDGE_INSTALL_DIR/opt/microsoft/msedge/msedge"
+
+# Download and extract EdgeDriver
 if [ ! -d "$DRIVER_DIR" ]; then
     echo "Installing EdgeDriver $EDGE_VERSION..."
     mkdir -p "$DRIVER_DIR"
@@ -49,12 +54,11 @@ if [ ! -d "$DRIVER_DIR" ]; then
 fi
 
 # Export environment variables so Selenium uses correct binaries
-export EDGE_BINARY="$EDGE_INSTALL_DIR/microsoft-edge"
+export EDGE_BINARY
 export WEBDRIVER_EDGE_DRIVER="$DRIVER_DIR/msedgedriver"
-export PATH="$DRIVER_DIR:$EDGE_INSTALL_DIR:$PATH"
+export PATH="$DRIVER_DIR:$(dirname "$EDGE_BINARY"):$PATH"
 
 echo "Edge and EdgeDriver $EDGE_VERSION installed successfully."
-
 
 echo "=== Starting UI tests ==="
 
