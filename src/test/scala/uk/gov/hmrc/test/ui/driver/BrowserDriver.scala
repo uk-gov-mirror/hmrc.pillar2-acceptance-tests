@@ -1,41 +1,43 @@
-package uk.gov.hmrc.test.ui.driver
+package uk.gov.hmrc.selenium.webdriver
 
-import com.typesafe.scalalogging.LazyLogging
-import org.openqa.selenium.WebDriver
+import org.openqa.selenium._
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeOptions}
-import org.openqa.selenium.firefox.FirefoxDriver
+import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
-trait BrowserDriver extends LazyLogging {
+object DriverFactory {
 
-  private val browserName = sys.props.getOrElse("browser", "chrome").toLowerCase
-  private val jenkinsHome = sys.env.get("JENKINS_HOME")
-  private val edgeVersion = sys.env.getOrElse("EDGE_VERSION", "138.0.3351.95")
+  lazy val driver: WebDriver = {
+    sys.env.get("BROWSER").map(_.toLowerCase) match {
+      case Some("firefox") =>
+        println("[DriverFactory] Starting FirefoxDriver...")
+        val options = new FirefoxOptions()
+        options.addArguments("--headless")
+        new FirefoxDriver(options)
 
-  // Configure Edge for Jenkins
-  if (browserName == "edge" && jenkinsHome.isDefined) {
-    val edgeDriverPath = s"$jenkinsHome/.local/edgedriver-$edgeVersion/msedgedriver"
-    val edgeBinaryPath = s"$jenkinsHome/.local/microsoft-edge-$edgeVersion/microsoft-edge"
+      case Some("edge") =>
+        println("[DriverFactory] Starting EdgeDriver...")
 
-    System.setProperty("webdriver.edge.driver", edgeDriverPath)
-    System.setProperty("selenium.manager.enabled", "false") // disable online lookup
+        val edgeBinaryPath = sys.env.getOrElse("EDGE_BINARY", "/usr/bin/microsoft-edge")
+        val edgeDriverPath = sys.env.getOrElse("WEBDRIVER_EDGE_DRIVER", "/usr/local/bin/msedgedriver")
 
-    logger.info(s"Running Edge $edgeVersion on Jenkins")
-    logger.info(s"EdgeDriver path: $edgeDriverPath")
-    logger.info(s"Edge binary path: $edgeBinaryPath")
-  } else {
-    logger.info(s"Instantiating browser: $browserName (local or non-Jenkins environment)")
-  }
+        println(s"[DriverFactory] Using Edge binary at: $edgeBinaryPath")
+        println(s"[DriverFactory] Using EdgeDriver at: $edgeDriverPath")
 
-  // Lazy WebDriver instantiation
-  lazy val driver: WebDriver = browserName match {
-    case "firefox" =>
-      new FirefoxDriver()
-    case "edge" =>
-      val options = new EdgeOptions()
-      sys.env.get("EDGE_BINARY").foreach(options.setBinary)
-      new EdgeDriver(options)
-    case _ => // default to Chrome
-      new ChromeDriver()
+        // Make sure Selenium knows where to find the EdgeDriver binary
+        System.setProperty("webdriver.edge.driver", edgeDriverPath)
+
+        val options = new EdgeOptions()
+        options.setBinary(edgeBinaryPath)
+        options.addArguments("--headless=new", "--no-sandbox", "--disable-setuid-sandbox")
+
+        new EdgeDriver(options)
+
+      case _ =>
+        println("[DriverFactory] Defaulting to ChromeDriver...")
+        val options = new org.openqa.selenium.chrome.ChromeOptions()
+        options.addArguments("--headless=new", "--no-sandbox", "--disable-dev-shm-usage")
+        new ChromeDriver(options)
+    }
   }
 }
