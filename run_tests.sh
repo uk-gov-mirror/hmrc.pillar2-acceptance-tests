@@ -65,4 +65,4 @@ echo "=== Starting UI tests ==="
 ENVIRONMENT="${ENVIRONMENT:=local}"
 
 # Run SBT tests
-sbt clean -Dbrowser="edge" -Denvironment="$ENVIRONMENT" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
+sbt clean -Dbrowser="edge" -Dwebdriver.edge.driver=/home/jenkins/.local/edgedriver-138.0.3351.95/msedgedriver -Denvironment="$ENVIRONMENT" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
