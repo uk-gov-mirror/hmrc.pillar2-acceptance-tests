@@ -16,6 +16,12 @@ for dir in "$EDGE_INSTALL_BASE"/microsoft-edge-*; do
     fi
 done
 
+echo "Cleaning old Edge processes and profiles..."
+pkill -f "msedgedriver" || true
+pkill -f "msedge" || true
+rm -rf /tmp/edge-profile-*
+
+
 # Remove old EdgeDriver installations
 echo "Removing old EdgeDriver installations..."
 for dir in "$EDGE_INSTALL_BASE"/edgedriver-*; do
