@@ -5,6 +5,8 @@ import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
+import java.nio.file.Files
+
 
 object DriverManager {
 
@@ -13,13 +15,22 @@ object DriverManager {
 
       case "edge" =>
         val edgeBinary = sys.props.get("edge.binary")
-        val driverPath = sys.props.getOrElse("webdriver.edge.driver",
-          throw new IllegalArgumentException("System property 'webdriver.edge.driver' must be set"))
+        val driverPath = sys.props.getOrElse(
+          "webdriver.edge.driver",
+          throw new IllegalArgumentException("System property 'webdriver.edge.driver' must be set")
+        )
 
         val edgeOptions = new EdgeOptions()
-        if (sys.props.get("headless").exists(_.toBoolean)) {
+
+        // Ensure headless mode can be overridden via system property
+        if (sys.props.getOrElse("headless", "true").toBoolean) {
           edgeOptions.addArguments("--headless=new")
         }
+
+        // Add unique user data dir to avoid session clashes
+        val tempProfileDir = Files.createTempDirectory("edge-profile-").toAbsolutePath.toString
+        edgeOptions.addArguments(s"--user-data-dir=$tempProfileDir")
+
         edgeBinary.foreach(edgeOptions.setBinary)
 
         val service = new EdgeDriverService.Builder()
