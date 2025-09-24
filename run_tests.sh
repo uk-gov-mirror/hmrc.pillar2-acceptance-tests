@@ -1,11 +1,9 @@
 #!/bin/bash
-set -euo pipefail
+set -e
 
-echo "=== Setting up Microsoft Edge and EdgeDriver for UI tests ==="
+echo "=== Setting up Microsoft Edge (user-space) and EdgeDriver for UI tests ==="
 
-# ------------------------
 # Versions
-# ------------------------
 EDGE_VERSION="138.0.3351.95"
 
 # Direct URLs
@@ -13,81 +11,66 @@ EDGE_DEB_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-browser/pool
 EDGEDRIVER_ZIP_URL="https://artefacts.tax.service.gov.uk/artifactory/edge-driver/${EDGE_VERSION}/edgedriver_linux64.zip"
 
 # Install directories
-INSTALL_BASE="$HOME/.local"
-EDGE_INSTALL_DIR="$INSTALL_BASE/microsoft-edge-$EDGE_VERSION"
-DRIVER_INSTALL_DIR="$INSTALL_BASE/edgedriver-$EDGE_VERSION"
+EDGE_INSTALL_BASE="$HOME/.local"
+DRIVER_BASE="$HOME/.local"
+
+EDGE_INSTALL_DIR="$EDGE_INSTALL_BASE/microsoft-edge-$EDGE_VERSION"
+DRIVER_DIR="$DRIVER_BASE/edgedriver-$EDGE_VERSION"
 
 # ------------------------
-# Clean up old versions
+# Clean up old Edge/Driver versions
 # ------------------------
-echo "Cleaning up old versions..."
-find "$INSTALL_BASE" -maxdepth 1 -type d -name "microsoft-edge-*" ! -name "microsoft-edge-$EDGE_VERSION" -exec rm -rf {} +
-find "$INSTALL_BASE" -maxdepth 1 -type d -name "edgedriver-*" ! -name "edgedriver-$EDGE_VERSION" -exec rm -rf {} +
+echo "Cleaning up old Edge versions..."
+for dir in "$EDGE_INSTALL_BASE"/microsoft-edge-*; do
+    [ "$dir" != "$EDGE_INSTALL_DIR" ] && rm -rf "$dir"
+done
 
-mkdir -p "$EDGE_INSTALL_DIR" "$DRIVER_INSTALL_DIR"
+echo "Cleaning up old EdgeDriver versions..."
+for dir in "$DRIVER_BASE"/edgedriver-*; do
+    [ "$dir" != "$DRIVER_DIR" ] && rm -rf "$dir"
+done
+
+mkdir -p "$EDGE_INSTALL_DIR" "$DRIVER_DIR"
 
 # ------------------------
-# Download and Install Edge
+# Install Edge
 # ------------------------
-TMP_DEB="/tmp/microsoft-edge-${EDGE_VERSION}.deb"
-if [ ! -f "$TMP_DEB" ]; then
-    echo "Downloading Microsoft Edge $EDGE_VERSION..."
-    curl -sSL -o "$TMP_DEB" "$EDGE_DEB_URL" || { echo "ERROR: Edge download failed"; exit 1; }
-fi
-
-if [ ! -f "$EDGE_INSTALL_DIR/usr/bin/microsoft-edge" ]; then
-    echo "Extracting Microsoft Edge..."
-    dpkg-deb -x "$TMP_DEB" "$EDGE_INSTALL_DIR" || { echo "ERROR: Extraction failed"; exit 1; }
-    if [ ! -f "$EDGE_INSTALL_DIR/usr/bin/microsoft-edge" ]; then
-        echo "ERROR: Edge binary not found after extraction"
-        exit 1
-    fi
-    chmod +x "$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
-    echo "Microsoft Edge installed at $EDGE_INSTALL_DIR"
-else
+if [ -d "$EDGE_INSTALL_DIR/usr" ]; then
     echo "Microsoft Edge $EDGE_VERSION already installed."
-fi
-
-# ------------------------
-# Download and Install EdgeDriver
-# ------------------------
-TMP_ZIP="/tmp/edgedriver_linux64_${EDGE_VERSION}.zip"
-if [ ! -f "$TMP_ZIP" ]; then
-    echo "Downloading EdgeDriver $EDGE_VERSION..."
-    curl -sSL -o "$TMP_ZIP" "$EDGEDRIVER_ZIP_URL" || { echo "ERROR: EdgeDriver download failed"; exit 1; }
-fi
-
-if [ ! -f "$DRIVER_INSTALL_DIR/msedgedriver" ]; then
-    echo "Extracting EdgeDriver..."
-    unzip -o "$TMP_ZIP" -d "$DRIVER_INSTALL_DIR" || { echo "ERROR: EdgeDriver extraction failed"; exit 1; }
-    chmod +x "$DRIVER_INSTALL_DIR/msedgedriver"
-    echo "EdgeDriver installed at $DRIVER_INSTALL_DIR"
 else
-    echo "EdgeDriver $EDGE_VERSION already installed."
+    echo "Installing Microsoft Edge $EDGE_VERSION..."
+    TMP_DEB="/tmp/microsoft-edge-${EDGE_VERSION}.deb"
+    curl -L -o "$TMP_DEB" "$EDGE_DEB_URL"
+    dpkg-deb -x "$TMP_DEB" "$EDGE_INSTALL_DIR"
+    rm "$TMP_DEB"
+    echo "Microsoft Edge installed in $EDGE_INSTALL_DIR"
 fi
 
 # ------------------------
-# Export environment variables
+# Install EdgeDriver
+# ------------------------
+if [ -f "$DRIVER_DIR/msedgedriver" ]; then
+    echo "EdgeDriver $EDGE_VERSION already installed."
+else
+    echo "Installing EdgeDriver $EDGE_VERSION..."
+    TMP_ZIP="/tmp/edgedriver_linux64_${EDGE_VERSION}.zip"
+    curl -L -o "$TMP_ZIP" "$EDGEDRIVER_ZIP_URL"
+    unzip -o "$TMP_ZIP" -d "$DRIVER_DIR"
+    rm "$TMP_ZIP"
+    chmod +x "$DRIVER_DIR/msedgedriver"
+    echo "EdgeDriver installed in $DRIVER_DIR"
+fi
+
+# ------------------------
+# Set environment variables for Selenium
 # ------------------------
 export EDGE_BINARY="$EDGE_INSTALL_DIR/usr/bin/microsoft-edge"
-export WEBDRIVER_EDGE_DRIVER="$DRIVER_INSTALL_DIR/msedgedriver"
-export PATH="$DRIVER_INSTALL_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
-export EDGE_VERSION="$EDGE_VERSION"
+export WEBDRIVER_EDGE_DRIVER="$DRIVER_DIR/msedgedriver"
+export PATH="$DRIVER_DIR:$EDGE_INSTALL_DIR/usr/bin:$PATH"
 
-echo "Environment configured:"
-echo "  EDGE_BINARY=$EDGE_BINARY"
-echo "  WEBDRIVER_EDGE_DRIVER=$WEBDRIVER_EDGE_DRIVER"
-echo "  PATH=$PATH"
+echo "=== Starting UI tests ==="
 
-echo "=== Edge setup complete ==="
-
-# ------------------------
-# Run tests
-# ------------------------
 ENVIRONMENT="${ENVIRONMENT:=local}"
 
-echo "Starting tests with SBT..."
-sbt clean \
-  -Dbrowser="edge" \
-  -Denvironment="$ENVIRONMENT" \
-  "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
+# Run SBT tests
+sbt clean -Dbrowser="edge" -Denvironment="$ENVIRONMENT" "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
