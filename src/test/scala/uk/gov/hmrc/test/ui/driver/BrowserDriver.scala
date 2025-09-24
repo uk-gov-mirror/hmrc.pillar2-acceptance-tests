@@ -1,4 +1,3 @@
-
 package uk.gov.hmrc.test.ui.driver
 
 import com.typesafe.scalalogging.LazyLogging
