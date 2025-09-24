@@ -33,6 +33,10 @@ echo "Edge setup complete:"
 echo "EDGE_BINARY=$EDGE_BINARY"
 echo "WEBDRIVER_EDGE_DRIVER=$WEBDRIVER_EDGE_DRIVER"
 
+ls -l "$HOME/.local/microsoft-edge-${EDGE_VERSION}/opt/microsoft/msedge"
+ls -l "$HOME/.local/edgedriver-${EDGE_VERSION}"
+
+
 
 # ------------------------
 # Run SBT tests
