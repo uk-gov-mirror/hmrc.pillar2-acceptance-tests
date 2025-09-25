@@ -3,7 +3,6 @@ package uk.gov.hmrc.test.ui.driver
 import java.io.File
 import java.nio.file.{Files, Paths}
 import java.util.UUID
-import scala.jdk.CollectionConverters._
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
@@ -12,93 +11,73 @@ import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 object DriverManager {
 
   lazy val instance: WebDriver = {
-    println("========== DRIVER DEBUG START ==========")
+    // Log working directory
+    println(s"Working Directory: ${new File(".").getAbsolutePath}")
 
-    // 1. JVM System Properties
+    // Log system properties
     println("=== JVM System Properties ===")
     sys.props.foreach { case (k, v) => println(s"$k = $v") }
 
-    // 2. Environment Variables
+    // Log environment variables
     println("=== Environment Variables ===")
     sys.env.foreach { case (k, v) => println(s"$k = $v") }
 
-    // 3. Working Directory
-    println(s"Working Directory: ${new java.io.File(".").getAbsolutePath}")
-
-    // 4. Existing /tmp edge-profile-* directories before launch
-    val tmpDir = Paths.get("/tmp")
-    if (Files.exists(tmpDir)) {
-      val edgeDirs = Files.list(tmpDir).iterator().asScala
-        .filter(path => path.getFileName.toString.startsWith("edge-profile-"))
-        .toList
-
-      println("=== /tmp edge-profile-* folders BEFORE starting ===")
-      edgeDirs.foreach(dir => println(s"Found: ${dir.toAbsolutePath}"))
-      println("=== End of /tmp listing ===")
-    } else {
-      println("WARNING: /tmp directory does not exist or cannot be accessed!")
-    }
-
-    // Determine browser
     val browser = sys.props.getOrElse(
       "browser",
       throw new IllegalArgumentException("'browser' system property must be set")
     )
+
     println(s"[DriverManager] Selected browser: $browser")
 
-    // Ensure EdgeDriver logs are verbose
-    System.setProperty("webdriver.edge.verboseLogging", "true")
-    System.setProperty("webdriver.edge.logfile", "/tmp/edge-driver.log")
+    // Decide headless mode: allow overriding by system property first, then environment variable
+    val headless = sys.props.get("headless")
+      .orElse(sys.env.get("BROWSER_OPTION_HEADLESS"))
+      .map(_.toBoolean)
+      .getOrElse(true)
+
+    println(s"[DriverManager] Headless mode enabled: $headless")
 
     browser match {
-
       case "edge" =>
-        val edgeBinary = sys.props.get("edge.binary")
-        val driverPath = sys.props.getOrElse(
-          "webdriver.edge.driver",
-          throw new IllegalArgumentException("System property 'webdriver.edge.driver' must be set")
-        )
+        val edgeBinary = sys.props.get("edge.binary").orElse(sys.env.get("EDGE_BINARY"))
+        val driverPath = sys.props.get("webdriver.edge.driver")
+          .orElse(sys.env.get("WEBDRIVER_EDGE_DRIVER"))
+          .getOrElse(throw new IllegalArgumentException("Edge driver path must be set via 'webdriver.edge.driver' or 'WEBDRIVER_EDGE_DRIVER'"))
 
         val edgeOptions = new EdgeOptions()
-        val addedArgs = scala.collection.mutable.ListBuffer[String]()
 
-        // Enable headless mode if property is true
-        val isHeadless = sys.props.getOrElse("headless", "true").toBoolean
-        println(s"[DriverManager] Headless mode enabled: $isHeadless")
-        if (isHeadless) {
+        if (headless) {
           edgeOptions.addArguments("--headless=new")
-          addedArgs += "--headless=new"
         }
 
-        // Generate unique profile directory
+        // Create unique user-data-dir
         val buildId = sys.env.getOrElse("BUILD_ID", "local")
         val uniqueId = UUID.randomUUID().toString
         val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
 
         Files.createDirectories(uniqueProfileDir)
-        println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
-        val profileArg = s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}"
-        edgeOptions.addArguments(profileArg)
-        addedArgs += profileArg
 
-        // Print Edge command-line arguments
+        println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
+        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
+
+        // Log all Edge options we have set
         println("=== Edge Options Arguments ===")
-        addedArgs.foreach(arg => println(s"Edge Arg: $arg"))
+        List("--headless=new", s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
+          .filter(edgeOptions.toString.contains) // only print the ones actually used
+          .foreach(arg => println(s"Edge Arg: $arg"))
         println("=== End of Edge Options ===")
 
-        edgeBinary.foreach(binaryPath => {
-          println(s"[DriverManager] Using Edge binary: $binaryPath")
-          edgeOptions.setBinary(binaryPath)
+        edgeBinary.foreach(bin => {
+          println(s"[DriverManager] Using Edge binary: $bin")
+          edgeOptions.setBinary(bin)
         })
 
-        // Build the EdgeDriver service
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
           .build()
 
         val driver = new EdgeDriver(service, edgeOptions)
 
-        // Register shutdown hook to clean up temp profiles
         sys.addShutdownHook {
           println(s"[DriverManager] Cleaning up Edge profile: $uniqueProfileDir")
           try {
@@ -113,36 +92,18 @@ object DriverManager {
 
       case "chrome" =>
         val chromeOptions = new ChromeOptions()
-        val addedArgs = scala.collection.mutable.ListBuffer[String]()
-
-        val isHeadless = sys.props.getOrElse("headless", "true").toBoolean
-        println(s"[DriverManager] Chrome headless mode: $isHeadless")
-        if (isHeadless) {
+        if (headless) {
           chromeOptions.addArguments("--headless=new")
-          addedArgs += "--headless=new"
         }
-
-        println("=== Chrome Options Arguments ===")
-        addedArgs.foreach(arg => println(s"Chrome Arg: $arg"))
-        println("=== End of Chrome Options ===")
-
+        println("[DriverManager] Launching Chrome")
         new ChromeDriver(chromeOptions)
 
       case "firefox" =>
         val firefoxOptions = new FirefoxOptions()
-        val addedArgs = scala.collection.mutable.ListBuffer[String]()
-
-        val isHeadless = sys.props.getOrElse("headless", "true").toBoolean
-        println(s"[DriverManager] Firefox headless mode: $isHeadless")
-        if (isHeadless) {
-          firefoxOptions.addArguments("--headless")
-          addedArgs += "--headless"
+        if (headless) {
+          firefoxOptions.addArguments("--headless=new")
         }
-
-        println("=== Firefox Options Arguments ===")
-        addedArgs.foreach(arg => println(s"Firefox Arg: $arg"))
-        println("=== End of Firefox Options ===")
-
+        println("[DriverManager] Launching Firefox")
         new FirefoxDriver(firefoxOptions)
 
       case other =>
@@ -150,15 +111,10 @@ object DriverManager {
     }
   }
 
-  /**
-   * Recursively delete a directory or file.
-   */
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) {
-      file.listFiles().foreach(deleteRecursively)
+      Option(file.listFiles()).getOrElse(Array.empty).foreach(deleteRecursively)
     }
-    if (!file.delete()) {
-      println(s"[DriverManager] WARNING: Failed to delete ${file.getAbsolutePath}")
-    }
+    file.delete()
   }
 }
