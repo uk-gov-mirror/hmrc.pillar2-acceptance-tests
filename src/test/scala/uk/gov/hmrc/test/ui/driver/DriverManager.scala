@@ -18,7 +18,6 @@ object DriverManager {
 
     browser match {
 
-      // ---------- EDGE ----------
       case "edge" =>
         val edgeBinary = sys.props.get("edge.binary")
         val driverPath = sys.props.getOrElse(
@@ -28,22 +27,23 @@ object DriverManager {
 
         val edgeOptions = new EdgeOptions()
 
-        // Headless toggle via -Dheadless=true or -Dheadless=false (defaults to true)
         if (sys.props.getOrElse("headless", "true").toBoolean) {
           edgeOptions.addArguments("--headless=new")
         }
 
-        // Always use a unique profile dir to prevent collisions
         val buildId = sys.env.getOrElse("BUILD_ID", "local")
         val uniqueId = UUID.randomUUID().toString
-        val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis()}-$uniqueId")
+        val threadId = Thread.currentThread().getId
+        val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.nanoTime()}-$threadId-$uniqueId")
 
+        if (Files.exists(uniqueProfileDir)) {
+          deleteRecursively(uniqueProfileDir.toFile)
+        }
         Files.createDirectories(uniqueProfileDir)
 
         println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
 
-        // Clean up profile folder on shutdown
         sys.addShutdownHook {
           println(s"[DriverManager] Cleaning up Edge profile directory: $uniqueProfileDir")
           try {
@@ -58,12 +58,11 @@ object DriverManager {
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
-          .usingAnyFreePort() // Prevents port clashes
+          .usingAnyFreePort()
           .build()
 
         new EdgeDriver(service, edgeOptions)
 
-      // ---------- CHROME ----------
       case "chrome" =>
         val chromeOptions = new ChromeOptions()
         if (sys.props.getOrElse("headless", "true").toBoolean) {
@@ -71,7 +70,6 @@ object DriverManager {
         }
         new ChromeDriver(chromeOptions)
 
-      // ---------- FIREFOX ----------
       case "firefox" =>
         val firefoxOptions = new FirefoxOptions()
         if (sys.props.getOrElse("headless", "true").toBoolean) {
@@ -79,13 +77,11 @@ object DriverManager {
         }
         new FirefoxDriver(firefoxOptions)
 
-      // ---------- UNSUPPORTED ----------
       case other =>
         throw new IllegalArgumentException(s"Unsupported browser: $other")
     }
   }
 
-  /** Recursively delete files and directories */
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) {
       Option(file.listFiles()).getOrElse(Array.empty).foreach(deleteRecursively)
