@@ -15,6 +15,7 @@ lazy val testSuite = (project in file("."))
     scalacOptions ++= Seq("-feature"),
     libraryDependencies ++= Dependencies.test,
     libraryDependencies += "org.seleniumhq.selenium" % "selenium-devtools-v138" % "4.35.0",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-support" % "4.24.0",
       // The testOptions from SbtAutoBuildPlugin supports only ScalaTest. Resetting testOptions for Cucumber Tests.
     Test / testOptions := Seq.empty,
     scalafixSettings
