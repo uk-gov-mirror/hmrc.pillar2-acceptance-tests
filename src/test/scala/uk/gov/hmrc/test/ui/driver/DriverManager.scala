@@ -33,35 +33,32 @@ object DriverManager {
           edgeOptions.addArguments("--headless=new")
         }
 
-        // Only use custom user-data-dir if explicitly requested
-        if (sys.props.get("use.custom.profile").exists(_.toBoolean)) {
-          val buildId = sys.env.getOrElse("BUILD_ID", "local")
-          val uniqueId = UUID.randomUUID().toString
-          val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis()}-$uniqueId")
+        // Always use a unique profile dir to prevent collisions
+        val buildId = sys.env.getOrElse("BUILD_ID", "local")
+        val uniqueId = UUID.randomUUID().toString
+        val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis()}-$uniqueId")
 
-          Files.createDirectories(uniqueProfileDir)
+        Files.createDirectories(uniqueProfileDir)
 
-          println(s"[DriverManager] Launching Edge with custom user-data-dir: $uniqueProfileDir")
-          edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
+        println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
+        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
 
-          sys.addShutdownHook {
-            println(s"[DriverManager] Cleaning up Edge profile directory: $uniqueProfileDir")
-            try {
-              deleteRecursively(uniqueProfileDir.toFile)
-            } catch {
-              case ex: Exception =>
-                println(s"[DriverManager] Failed to clean Edge profile: ${ex.getMessage}")
-            }
+        // Clean up profile folder on shutdown
+        sys.addShutdownHook {
+          println(s"[DriverManager] Cleaning up Edge profile directory: $uniqueProfileDir")
+          try {
+            deleteRecursively(uniqueProfileDir.toFile)
+          } catch {
+            case ex: Exception =>
+              println(s"[DriverManager] Failed to clean Edge profile: ${ex.getMessage}")
           }
-        } else {
-          println("[DriverManager] Running Edge without a custom user-data-dir")
         }
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
-          .usingAnyFreePort() // Prevents port clashes when running in parallel
+          .usingAnyFreePort() // Prevents port clashes
           .build()
 
         new EdgeDriver(service, edgeOptions)
