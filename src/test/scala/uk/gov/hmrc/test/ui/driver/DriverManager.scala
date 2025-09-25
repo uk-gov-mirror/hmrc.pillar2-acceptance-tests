@@ -18,6 +18,7 @@ object DriverManager {
 
     browser match {
 
+      // ---------- EDGE ----------
       case "edge" =>
         val edgeBinary = sys.props.get("edge.binary")
         val driverPath = sys.props.getOrElse(
@@ -27,39 +28,45 @@ object DriverManager {
 
         val edgeOptions = new EdgeOptions()
 
+        // Headless toggle via -Dheadless=true or -Dheadless=false (defaults to true)
         if (sys.props.getOrElse("headless", "true").toBoolean) {
           edgeOptions.addArguments("--headless=new")
         }
 
-        val buildId = sys.env.getOrElse("BUILD_ID", "local")
-        val uniqueId = UUID.randomUUID().toString
-        val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
+        // Only use custom user-data-dir if explicitly requested
+        if (sys.props.get("use.custom.profile").exists(_.toBoolean)) {
+          val buildId = sys.env.getOrElse("BUILD_ID", "local")
+          val uniqueId = UUID.randomUUID().toString
+          val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis()}-$uniqueId")
 
-        Files.createDirectories(uniqueProfileDir)
+          Files.createDirectories(uniqueProfileDir)
 
-        println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
-        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
+          println(s"[DriverManager] Launching Edge with custom user-data-dir: $uniqueProfileDir")
+          edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
+
+          sys.addShutdownHook {
+            println(s"[DriverManager] Cleaning up Edge profile directory: $uniqueProfileDir")
+            try {
+              deleteRecursively(uniqueProfileDir.toFile)
+            } catch {
+              case ex: Exception =>
+                println(s"[DriverManager] Failed to clean Edge profile: ${ex.getMessage}")
+            }
+          }
+        } else {
+          println("[DriverManager] Running Edge without a custom user-data-dir")
+        }
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
+          .usingAnyFreePort() // Prevents port clashes when running in parallel
           .build()
 
-        val driver = new EdgeDriver(service, edgeOptions)
+        new EdgeDriver(service, edgeOptions)
 
-        sys.addShutdownHook {
-          println(s"[DriverManager] Cleaning up Edge profile: $uniqueProfileDir")
-          try {
-            deleteRecursively(uniqueProfileDir.toFile)
-          } catch {
-            case ex: Exception =>
-              println(s"[DriverManager] Failed to clean Edge profile: ${ex.getMessage}")
-          }
-        }
-
-        driver
-
+      // ---------- CHROME ----------
       case "chrome" =>
         val chromeOptions = new ChromeOptions()
         if (sys.props.getOrElse("headless", "true").toBoolean) {
@@ -67,6 +74,7 @@ object DriverManager {
         }
         new ChromeDriver(chromeOptions)
 
+      // ---------- FIREFOX ----------
       case "firefox" =>
         val firefoxOptions = new FirefoxOptions()
         if (sys.props.getOrElse("headless", "true").toBoolean) {
@@ -74,15 +82,19 @@ object DriverManager {
         }
         new FirefoxDriver(firefoxOptions)
 
+      // ---------- UNSUPPORTED ----------
       case other =>
         throw new IllegalArgumentException(s"Unsupported browser: $other")
     }
   }
 
+  /** Recursively delete files and directories */
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) {
-      file.listFiles().foreach(deleteRecursively)
+      Option(file.listFiles()).getOrElse(Array.empty).foreach(deleteRecursively)
     }
-    file.delete()
+    if (!file.delete()) {
+      println(s"[DriverManager] Warning: Failed to delete ${file.getAbsolutePath}")
+    }
   }
 }
