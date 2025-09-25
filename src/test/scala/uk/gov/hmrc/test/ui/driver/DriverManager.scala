@@ -11,38 +11,27 @@ import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 object DriverManager {
 
   lazy val instance: WebDriver = {
-    // Log working directory
-    println(s"Working Directory: ${new File(".").getAbsolutePath}")
-
-    // Log system properties
-    println("=== JVM System Properties ===")
-    sys.props.foreach { case (k, v) => println(s"$k = $v") }
-
-    // Log environment variables
-    println("=== Environment Variables ===")
-    sys.env.foreach { case (k, v) => println(s"$k = $v") }
-
-    val browser = sys.props.getOrElse(
-      "browser",
-      throw new IllegalArgumentException("'browser' system property must be set")
-    )
+    val browser = sys.props.getOrElse("browser",
+      sys.env.getOrElse("BROWSER_IMAGE", throw new IllegalArgumentException("'browser' system property or BROWSER_IMAGE env var must be set"))
+    ).toLowerCase
 
     println(s"[DriverManager] Selected browser: $browser")
 
-    // Decide headless mode: allow overriding by system property first, then environment variable
-    val headless = sys.props.get("headless")
-      .orElse(sys.env.get("BROWSER_OPTION_HEADLESS"))
-      .map(_.toBoolean)
-      .getOrElse(true)
+    // headless priority: env var > system property > default true
+    val headlessEnv = sys.env.get("BROWSER_OPTION_HEADLESS")
+    val headlessProp = sys.props.get("headless")
+    val headless = headlessEnv.orElse(headlessProp).getOrElse("true").toBoolean
 
     println(s"[DriverManager] Headless mode enabled: $headless")
 
     browser match {
       case "edge" =>
-        val edgeBinary = sys.props.get("edge.binary").orElse(sys.env.get("EDGE_BINARY"))
-        val driverPath = sys.props.get("webdriver.edge.driver")
-          .orElse(sys.env.get("WEBDRIVER_EDGE_DRIVER"))
-          .getOrElse(throw new IllegalArgumentException("Edge driver path must be set via 'webdriver.edge.driver' or 'WEBDRIVER_EDGE_DRIVER'"))
+        val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
+        val driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
+          .orElse(sys.props.get("webdriver.edge.driver"))
+          .getOrElse(throw new IllegalArgumentException(
+            "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
+          ))
 
         val edgeOptions = new EdgeOptions()
 
@@ -50,7 +39,7 @@ object DriverManager {
           edgeOptions.addArguments("--headless=new")
         }
 
-        // Create unique user-data-dir
+        // Create unique user profile directory for each run
         val buildId = sys.env.getOrElse("BUILD_ID", "local")
         val uniqueId = UUID.randomUUID().toString
         val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
@@ -60,17 +49,15 @@ object DriverManager {
         println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
 
-        // Log all Edge options we have set
-        println("=== Edge Options Arguments ===")
-        List("--headless=new", s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
-          .filter(edgeOptions.toString.contains) // only print the ones actually used
-          .foreach(arg => println(s"Edge Arg: $arg"))
-        println("=== End of Edge Options ===")
+        edgeBinary.foreach { binary =>
+          println(s"[DriverManager] Using Edge binary at: $binary")
+          edgeOptions.setBinary(binary)
+        }
 
-        edgeBinary.foreach(bin => {
-          println(s"[DriverManager] Using Edge binary: $bin")
-          edgeOptions.setBinary(bin)
-        })
+        // Print out all Edge options for debugging
+        println("=== Edge Options Arguments ===")
+        edgeOptions.asMap().forEach((k, v) => println(s"Option: $k -> $v"))
+        println("=== End of Edge Options ===")
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
@@ -95,7 +82,6 @@ object DriverManager {
         if (headless) {
           chromeOptions.addArguments("--headless=new")
         }
-        println("[DriverManager] Launching Chrome")
         new ChromeDriver(chromeOptions)
 
       case "firefox" =>
@@ -103,7 +89,6 @@ object DriverManager {
         if (headless) {
           firefoxOptions.addArguments("--headless=new")
         }
-        println("[DriverManager] Launching Firefox")
         new FirefoxDriver(firefoxOptions)
 
       case other =>
@@ -113,7 +98,7 @@ object DriverManager {
 
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) {
-      Option(file.listFiles()).getOrElse(Array.empty).foreach(deleteRecursively)
+      file.listFiles().foreach(deleteRecursively)
     }
     file.delete()
   }
