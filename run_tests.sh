@@ -60,9 +60,9 @@ export EDGE_BINARY
 export WEBDRIVER_EDGE_DRIVER="$DRIVER_DIR/msedgedriver"
 export PATH="$DRIVER_DIR:$(dirname "$EDGE_BINARY"):$PATH"
 
-# --- Include selenium-devtools-v138 jar in SBT classpath ---
+# --- Include selenium-devtools-v138 in SBT classpath ---
 export DEVTOOLS_JAR="$HOME/.ivy2/cache/org.seleniumhq.selenium/selenium-devtools-v138/jars/selenium-devtools-v138-4.35.0.jar"
-export SBT_OPTS="-cp $DEVTOOLS_JAR $SBT_OPTS"
+export SBT_OPTS="-cp $DEVTOOLS_JAR ${SBT_OPTS:-}"
 
 echo "Edge and EdgeDriver $EDGE_VERSION installed successfully."
 echo "=== Starting UI tests ==="
