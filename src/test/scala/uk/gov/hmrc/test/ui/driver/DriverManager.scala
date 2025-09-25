@@ -16,6 +16,10 @@ object DriverManager {
       throw new IllegalArgumentException("'browser' system property must be set")
     )
 
+    println("=== JVM System Properties ===")
+    sys.props.foreach { case (key, value) => println(s"$key = $value") }
+    println("=== End of System Properties ===")
+
     browser match {
 
       case "edge" =>
