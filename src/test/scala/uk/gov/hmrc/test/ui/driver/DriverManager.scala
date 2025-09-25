@@ -17,10 +17,9 @@ object DriverManager {
 
     println(s"[DriverManager] Selected browser: $browser")
 
-    // headless priority: env var > system property > default true
-    val headlessEnv = sys.env.get("BROWSER_OPTION_HEADLESS")
-    val headlessProp = sys.props.get("headless")
-    val headless = headlessEnv.orElse(headlessProp).getOrElse("true").toBoolean
+    val headless = sys.env.get("BROWSER_OPTION_HEADLESS")
+      .orElse(sys.props.get("headless"))
+      .getOrElse("true").toBoolean
 
     println(s"[DriverManager] Headless mode enabled: $headless")
 
@@ -34,30 +33,16 @@ object DriverManager {
           ))
 
         val edgeOptions = new EdgeOptions()
+        if (headless) edgeOptions.addArguments("--headless=new")
 
-        if (headless) {
-          edgeOptions.addArguments("--headless=new")
-        }
-
-        // Create unique user profile directory for each run
+        // Unique user profile
         val buildId = sys.env.getOrElse("BUILD_ID", "local")
         val uniqueId = UUID.randomUUID().toString
         val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
-
         Files.createDirectories(uniqueProfileDir)
+        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
-        println(s"[DriverManager] Launching Edge with unique user-data-dir: $uniqueProfileDir")
-        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath.toString}")
-
-        edgeBinary.foreach { binary =>
-          println(s"[DriverManager] Using Edge binary at: $binary")
-          edgeOptions.setBinary(binary)
-        }
-
-        // Print out all Edge options for debugging
-        println("=== Edge Options Arguments ===")
-        edgeOptions.asMap().forEach((k, v) => println(s"Option: $k -> $v"))
-        println("=== End of Edge Options ===")
+        edgeBinary.foreach(edgeOptions.setBinary)
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
@@ -66,29 +51,20 @@ object DriverManager {
         val driver = new EdgeDriver(service, edgeOptions)
 
         sys.addShutdownHook {
-          println(s"[DriverManager] Cleaning up Edge profile: $uniqueProfileDir")
-          try {
-            deleteRecursively(uniqueProfileDir.toFile)
-          } catch {
-            case ex: Exception =>
-              println(s"[DriverManager] Failed to clean Edge profile: ${ex.getMessage}")
-          }
+          try deleteRecursively(uniqueProfileDir.toFile)
+          catch { case _: Exception => () }
         }
 
         driver
 
       case "chrome" =>
         val chromeOptions = new ChromeOptions()
-        if (headless) {
-          chromeOptions.addArguments("--headless=new")
-        }
+        if (headless) chromeOptions.addArguments("--headless=new")
         new ChromeDriver(chromeOptions)
 
       case "firefox" =>
         val firefoxOptions = new FirefoxOptions()
-        if (headless) {
-          firefoxOptions.addArguments("--headless=new")
-        }
+        if (headless) firefoxOptions.addArguments("--headless=new")
         new FirefoxDriver(firefoxOptions)
 
       case other =>
@@ -97,9 +73,7 @@ object DriverManager {
   }
 
   private def deleteRecursively(file: File): Unit = {
-    if (file.isDirectory) {
-      file.listFiles().foreach(deleteRecursively)
-    }
+    if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
     file.delete()
   }
 }
