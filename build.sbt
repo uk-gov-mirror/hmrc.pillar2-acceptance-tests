@@ -15,8 +15,8 @@ lazy val testSuite = (project in file("."))
     scalacOptions ++= Seq("-feature"),
     libraryDependencies ++= Dependencies.test,
     libraryDependencies += "org.seleniumhq.selenium" % "selenium-devtools-v138" % "4.35.0",
-    libraryDependencies += "org.seleniumhq.selenium" % "selenium-support" % "4.24.0",
-    libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % "4.24.0",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-support" % "4.35.0",
+    libraryDependencies += "org.seleniumhq.selenium" % "selenium-java" % "4.35.0",
     Test / testOptions := Seq.empty,
     scalafixSettings
   )

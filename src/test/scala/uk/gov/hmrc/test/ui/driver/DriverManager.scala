@@ -11,8 +11,14 @@ import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 object DriverManager {
 
   lazy val instance: WebDriver = {
-    val browser = sys.props.getOrElse("browser",
-      sys.env.getOrElse("BROWSER_IMAGE", throw new IllegalArgumentException("'browser' system property or BROWSER_IMAGE env var must be set"))
+    val browser = sys.props.getOrElse(
+      "browser",
+      sys.env.getOrElse(
+        "BROWSER_IMAGE",
+        throw new IllegalArgumentException(
+          "'browser' system property or BROWSER_IMAGE env var must be set"
+        )
+      )
     ).toLowerCase
 
     println(s"[DriverManager] Selected browser: $browser")
@@ -28,20 +34,24 @@ object DriverManager {
         val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
         val driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
           .orElse(sys.props.get("webdriver.edge.driver"))
-          .getOrElse(throw new IllegalArgumentException(
-            "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
-          ))
+          .getOrElse(
+            throw new IllegalArgumentException(
+              "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
+            )
+          )
 
         val edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        // Unique user profile
+        // Create a unique user-data-dir to avoid conflicts
         val buildId = sys.env.getOrElse("BUILD_ID", "local")
         val uniqueId = UUID.randomUUID().toString
-        val uniqueProfileDir = Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
+        val uniqueProfileDir =
+          Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
         Files.createDirectories(uniqueProfileDir)
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
+        // Set Edge binary if specified
         edgeBinary.foreach(edgeOptions.setBinary)
 
         val service = new EdgeDriverService.Builder()
@@ -50,9 +60,10 @@ object DriverManager {
 
         val driver = new EdgeDriver(service, edgeOptions)
 
+        // Cleanup user profile on JVM exit
         sys.addShutdownHook {
           try deleteRecursively(uniqueProfileDir.toFile)
-          catch { case _: Exception => () }
+          catch { case ex: Exception => println(s"Failed to delete profile: ${ex.getMessage}") }
         }
 
         driver
