@@ -69,6 +69,33 @@ echo "=== Starting UI tests ==="
 
 ENVIRONMENT="${ENVIRONMENT:=local}"
 
+# --- Check Edge profile lock ---
+PROFILE_DIR="/tmp/edge-profile-check"
+
+echo "Checking for existing Edge user data lock in: $PROFILE_DIR"
+
+if [ -f "$PROFILE_DIR/SingletonLock" ]; then
+    echo "WARNING: Detected existing SingletonLock file."
+    ls -lh "$PROFILE_DIR/SingletonLock"
+
+    echo "Checking which process (if any) holds the lock..."
+    if lsof "$PROFILE_DIR/SingletonLock"; then
+        echo "Lock is currently held by an active process!"
+        echo "Listing processes for msedge/msedgedriver:"
+        ps -ef | grep -E 'msedge|msedgedriver' || true
+        echo "Please investigate before continuing."
+        exit 1
+    else
+        echo "No process owns the lock — stale lock detected. Cleaning up..."
+        rm -rf "$PROFILE_DIR"
+    fi
+else
+    echo "No lock detected. Edge profile directory is free to use."
+fi
+
+# Ensure clean profile directory exists before starting
+mkdir -p "$PROFILE_DIR"
+
 # --- Run SBT tests ---
 sbt clean \
     -Dbrowser="edge" \
