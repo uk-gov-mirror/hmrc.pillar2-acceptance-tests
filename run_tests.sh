@@ -21,6 +21,26 @@ pkill -f "msedgedriver" || true
 pkill -f "msedge" || true
 rm -rf /tmp/edge-profile-*
 
+# --- Detect locked Edge user data directory ---
+EDGE_PROFILE_BASE="/tmp/edge-profile-check"
+LOCK_FILE="$EDGE_PROFILE_BASE/SingletonLock"
+
+echo "Checking for existing Edge user data lock in: $EDGE_PROFILE_BASE"
+if [ -f "$LOCK_FILE" ]; then
+    echo "ERROR: Edge user data directory lock file detected: $LOCK_FILE"
+    echo "Attempting to clean up..."
+    pkill -f "msedge" || true
+    pkill -f "msedgedriver" || true
+    sleep 2
+
+    if [ -f "$LOCK_FILE" ]; then
+        echo "Lock file still exists after killing processes. Removing manually."
+        rm -f "$LOCK_FILE"
+    fi
+else
+    echo "No lock detected. Edge profile directory is free to use."
+fi
+
 # --- Remove old EdgeDriver installations ---
 echo "Removing old EdgeDriver installations..."
 for dir in "$EDGE_INSTALL_BASE"/edgedriver-*; do
