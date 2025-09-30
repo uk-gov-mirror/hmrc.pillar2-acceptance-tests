@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # --- Versions ---
-EDGE_VERSION="138"
+EDGE_VERSION="138.0.3351.95"
 EDGE_INSTALL_BASE="$HOME/.local"
 EDGE_INSTALL_DIR="$EDGE_INSTALL_BASE/microsoft-edge-$EDGE_VERSION"
 DRIVER_DIR="$EDGE_INSTALL_BASE/edgedriver-$EDGE_VERSION"
@@ -77,7 +77,7 @@ ENVIRONMENT="${ENVIRONMENT:=local}"
 
 # --- Run SBT tests ---
 sbt clean \
-    -Dbrowser.version=$EDGE_VERSION \
+    -Dbrowser.version=138
     -Dbrowser="edge" \
     -Dwebdriver.edge.driver="$WEBDRIVER_EDGE_DRIVER" \
     -Denvironment="$ENVIRONMENT" \
