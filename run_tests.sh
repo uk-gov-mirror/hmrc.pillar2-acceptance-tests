@@ -77,8 +77,7 @@ ENVIRONMENT="${ENVIRONMENT:=local}"
 
 # --- Run SBT tests ---
 sbt clean \
-
-
+    -Dbrowser.version=$EDGE_VERSION \
     -Dbrowser="edge" \
     -Dwebdriver.edge.driver="$WEBDRIVER_EDGE_DRIVER" \
     -Denvironment="$ENVIRONMENT" \
