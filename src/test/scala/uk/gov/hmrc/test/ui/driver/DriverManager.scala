@@ -49,6 +49,7 @@ object DriverManager {
         val uniqueProfileDir =
           Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
         Files.createDirectories(uniqueProfileDir)
+        println(s"[DriverManager] Using Edge user-data-dir: ${uniqueProfileDir.toAbsolutePath}")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
         // Set Edge binary if specified
