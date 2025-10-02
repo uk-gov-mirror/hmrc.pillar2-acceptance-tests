@@ -47,10 +47,10 @@ object DriverManager {
 
         def driver = new EdgeDriver(service, edgeOptions)
 
-        sys.addShutdownHook {
-          try deleteRecursively(uniqueProfileDir.toFile)
-          catch { case ex: Exception => println(s"Failed to delete temp profile: ${ex.getMessage}") }
-        }
+//        sys.addShutdownHook {
+//          try deleteRecursively(uniqueProfileDir.toFile)
+//          catch { case ex: Exception => println(s"Failed to delete temp profile: ${ex.getMessage}") }
+//        }
 
         driver
 
@@ -69,8 +69,8 @@ object DriverManager {
     }
   }
 
-  private def deleteRecursively(file: File): Unit = {
-    if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
-    file.delete()
-  }
+//  private def deleteRecursively(file: File): Unit = {
+//    if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
+//    file.delete()
+//  }
 }
