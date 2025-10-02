@@ -2,17 +2,15 @@ package uk.gov.hmrc.test.ui.driver
 
 import java.io.File
 import java.nio.file.{Files, Path}
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
+import java.util.concurrent.atomic.AtomicInteger
 
 object DriverManager {
 
-  // Counter to track how many profile dirs are created
+  // global counter for profile dirs
   private val profileCounter = new AtomicInteger(0)
 
   def instance: WebDriver = {
@@ -42,9 +40,12 @@ object DriverManager {
         val edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        val uniqueProfileDir: Path = Files.createTempDirectory(s"edge-profile-${UUID.randomUUID()}")
-        val count = profileCounter.incrementAndGet()
-        println(s"[DriverManager] Profile dir #$count created: $uniqueProfileDir")
+        val uniqueProfileDir: Path = {
+          val count = profileCounter.incrementAndGet()
+          val dir = Files.createTempDirectory("edge-profile-")
+          println(s"[DriverManager] Profile dir #$count created: $dir")
+          dir
+        }
 
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
@@ -58,10 +59,11 @@ object DriverManager {
 
         sys.addShutdownHook {
           try {
+            println(s"[DriverManager] Cleaning up profile dir: ${uniqueProfileDir.toAbsolutePath}")
             deleteRecursively(uniqueProfileDir.toFile)
-            println(s"[DriverManager] Deleted profile dir: $uniqueProfileDir")
           } catch {
-            case ex: Exception => println(s"[DriverManager] Failed to delete temp profile: ${ex.getMessage}")
+            case ex: Exception =>
+              println(s"[DriverManager] Failed to delete temp profile: ${ex.getMessage}")
           }
         }
 
