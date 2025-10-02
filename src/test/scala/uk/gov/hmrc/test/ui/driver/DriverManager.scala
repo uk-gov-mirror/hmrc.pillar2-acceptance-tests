@@ -43,7 +43,8 @@ object DriverManager {
         val uniqueProfileDir: Path = {
           val count = profileCounter.incrementAndGet()
           val dir = Files.createTempDirectory("edge-profile-")
-          println(s"[DriverManager] Profile dir #$count created: $dir")
+          val threadName = Thread.currentThread().getName
+          println(s"[DriverManager] Profile dir #$count created by thread '$threadName': $dir")
           dir
         }
 
