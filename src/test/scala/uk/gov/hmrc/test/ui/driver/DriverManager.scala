@@ -48,6 +48,7 @@ object DriverManager {
         val uniqueId = UUID.randomUUID().toString
         val uniqueProfileDir =
           Paths.get(s"/tmp/edge-profile-$buildId-${System.currentTimeMillis}-$uniqueId")
+        println(s"Files.createDirectories(uniqueProfileDir started")
         Files.createDirectories(uniqueProfileDir)
         println(s"[DriverManager] Using Edge user-data-dir: ${uniqueProfileDir.toAbsolutePath}")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
