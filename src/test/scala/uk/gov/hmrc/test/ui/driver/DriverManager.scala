@@ -51,9 +51,10 @@ object DriverManager {
         Files.createDirectories(uniqueProfileDir)
         println(s"[DriverManager] Using Edge user-data-dir: ${uniqueProfileDir.toAbsolutePath}")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
-
+        println(s"edgeOptions.addArguments executed")
         // Set Edge binary if specified
         edgeBinary.foreach(edgeOptions.setBinary)
+        println(s"edgeBinary.foreach(edgeOptions.setBinary) executed")
 
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
