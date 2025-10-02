@@ -36,8 +36,8 @@ object DriverManager {
         def edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        def uniqueProfileDir: Path = Files.createTempDirectory("edge-profile-")
-        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
+//        def uniqueProfileDir: Path = Files.createTempDirectory("edge-profile-")
+//        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
