@@ -18,7 +18,7 @@ object DriverManager {
       )
     ).toLowerCase
 
-    val headless = sys.env.get("BROWSER_OPTION_HEADLESS")
+    def headless = sys.env.get("BROWSER_OPTION_HEADLESS")
       .orElse(sys.props.get("headless"))
       .getOrElse("true")
       .toBoolean
@@ -26,26 +26,26 @@ object DriverManager {
     browser match {
 
       case "edge" =>
-        val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
-        val driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
+        def edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
+        def driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
           .orElse(sys.props.get("webdriver.edge.driver"))
           .getOrElse(throw new IllegalArgumentException(
             "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
           ))
 
-        val edgeOptions = new EdgeOptions()
+        def edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        val uniqueProfileDir: Path = Files.createTempDirectory("edge-profile-")
+        def uniqueProfileDir: Path = Files.createTempDirectory("edge-profile-")
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
-        val service = new EdgeDriverService.Builder()
+        def service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
           .build()
 
-        val driver = new EdgeDriver(service, edgeOptions)
+        def driver = new EdgeDriver(service, edgeOptions)
 
         sys.addShutdownHook {
           try deleteRecursively(uniqueProfileDir.toFile)
