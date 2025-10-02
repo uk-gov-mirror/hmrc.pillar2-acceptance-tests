@@ -2,12 +2,18 @@ package uk.gov.hmrc.test.ui.driver
 
 import java.io.File
 import java.nio.file.{Files, Path}
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
 object DriverManager {
+
+  // Counter to track how many profile dirs are created
+  private val profileCounter = new AtomicInteger(0)
 
   def instance: WebDriver = {
     val browser = sys.props.getOrElse(
@@ -26,31 +32,38 @@ object DriverManager {
     browser match {
 
       case "edge" =>
-        def edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
-        def driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
+        val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
+        val driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
           .orElse(sys.props.get("webdriver.edge.driver"))
           .getOrElse(throw new IllegalArgumentException(
             "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
           ))
 
-        def edgeOptions = new EdgeOptions()
+        val edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-//        def uniqueProfileDir: Path = Files.createTempDirectory("edge-profile-")
-//        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
+        val uniqueProfileDir: Path = Files.createTempDirectory(s"edge-profile-${UUID.randomUUID()}")
+        val count = profileCounter.incrementAndGet()
+        println(s"[DriverManager] Profile dir #$count created: $uniqueProfileDir")
+
+        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
-        def service = new EdgeDriverService.Builder()
+        val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
           .build()
 
-        def driver = new EdgeDriver(service, edgeOptions)
+        val driver = new EdgeDriver(service, edgeOptions)
 
-//        sys.addShutdownHook {
-//          try deleteRecursively(uniqueProfileDir.toFile)
-//          catch { case ex: Exception => println(s"Failed to delete temp profile: ${ex.getMessage}") }
-//        }
+        sys.addShutdownHook {
+          try {
+            deleteRecursively(uniqueProfileDir.toFile)
+            println(s"[DriverManager] Deleted profile dir: $uniqueProfileDir")
+          } catch {
+            case ex: Exception => println(s"[DriverManager] Failed to delete temp profile: ${ex.getMessage}")
+          }
+        }
 
         driver
 
@@ -69,8 +82,8 @@ object DriverManager {
     }
   }
 
-//  private def deleteRecursively(file: File): Unit = {
-//    if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
-//    file.delete()
-//  }
+  private def deleteRecursively(file: File): Unit = {
+    if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
+    file.delete()
+  }
 }
