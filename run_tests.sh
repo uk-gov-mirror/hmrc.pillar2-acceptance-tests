@@ -81,5 +81,5 @@ sbt clean \
     -Dbrowser="edge" \
     -Dwebdriver.edge.driver="$WEBDRIVER_EDGE_DRIVER" \
     -Denvironment="$ENVIRONMENT" \
-    Dbrowser.option.headless="${HEADLESS:=true}" \
+    -Dbrowser.option.headless="${HEADLESS:=true}" \
     "testOnly uk.gov.hmrc.test.ui.cucumber.runner.Runner"
