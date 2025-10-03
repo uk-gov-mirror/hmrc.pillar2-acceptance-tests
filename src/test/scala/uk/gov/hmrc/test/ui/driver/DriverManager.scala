@@ -1,12 +1,13 @@
 package uk.gov.hmrc.test.ui.driver
 
 import java.io.File
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
-import java.util.concurrent.atomic.AtomicInteger
 
 object DriverManager {
 
@@ -42,7 +43,9 @@ object DriverManager {
 
         val uniqueProfileDir: Path = {
           val count = profileCounter.incrementAndGet()
-          val dir = Files.createTempDirectory("edge-profile-")
+          val buildId = sys.env.getOrElse("BUILD_TAG", "local")
+          val dir = Paths.get(s"/tmp/edge-profile-$buildId-${UUID.randomUUID().toString}")
+          Files.createDirectories(dir)
           val threadName = Thread.currentThread().getName
           println(s"[DriverManager] Profile dir #$count created by thread '$threadName': $dir")
           dir
@@ -56,6 +59,7 @@ object DriverManager {
           .usingDriverExecutable(new File(driverPath))
           .build()
 
+        println(s"[DriverManager] Starting EdgeDriver with profile dir: ${uniqueProfileDir.toAbsolutePath}")
         val driver = new EdgeDriver(service, edgeOptions)
 
         sys.addShutdownHook {
