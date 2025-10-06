@@ -43,19 +43,21 @@ object DriverManager {
     val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
     val service = new EdgeDriverService.Builder().usingDriverExecutable(new File(driverPath)).build()
 
-    logExistingProfiles()
+    cleanupOldProfiles()
 
     var lastEx: Throwable = null
     for (attempt <- 1 to maxRetries) {
       val profileDir = createProfileDir()
       println(s"[DriverManager] [Attempt $attempt] Starting EdgeDriver with profile: $profileDir")
       val edgeOptions = new EdgeOptions()
-      if (headless) edgeOptions.addArguments("--headless=new")
+
+      if (headless) edgeOptions.addArguments("--headless")
       edgeOptions.addArguments(
         "--no-first-run",
         "--no-default-browser-check",
         "--disable-dev-shm-usage",
         "--disable-gpu",
+        "--no-sandbox",
         "--remote-allow-origins=*",
         s"--user-data-dir=${profileDir.toAbsolutePath}"
       )
@@ -79,6 +81,20 @@ object DriverManager {
 
     throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastEx)
   }
+
+  private def cleanupOldProfiles(): Unit = {
+    val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"))
+    if (Files.exists(tmpDir)) {
+      Files.list(tmpDir)
+        .iterator().asScala
+        .filter(p => p.getFileName.toString.startsWith("edge-profile-"))
+        .foreach { p =>
+          try deleteRecursively(p.toFile)
+          catch { case ex: Exception => println(s"[DriverManager] Failed to delete old profile $p: ${ex.getMessage}") }
+        }
+    }
+  }
+
 
   private def startChrome(headless: Boolean): WebDriver = {
     val chromeOptions = new ChromeOptions()
