@@ -29,7 +29,6 @@ object DriverManager {
       .toBoolean
 
     browser match {
-
       case "edge" =>
         val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
         val driverPath = sys.env.get("WEBDRIVER_EDGE_DRIVER")
@@ -38,21 +37,6 @@ object DriverManager {
             "System property 'webdriver.edge.driver' or env var WEBDRIVER_EDGE_DRIVER must be set"
           ))
 
-        val edgeOptions = new EdgeOptions()
-        if (headless) edgeOptions.addArguments("--headless=new")
-
-        edgeOptions.addArguments(
-          "--headless=new",
-          "--no-first-run",
-          "--no-default-browser-check",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--remote-allow-origins=*",
-          s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}"
-        )
-
-        edgeBinary.foreach(edgeOptions.setBinary)
-
         val service = new EdgeDriverService.Builder()
           .usingDriverExecutable(new File(driverPath))
           .build()
@@ -60,11 +44,10 @@ object DriverManager {
         println(s"[DriverManager] --- BEFORE starting Edge ---")
         logExistingProfiles()
 
-        val driver = startEdgeWithRetry(service, edgeOptions, maxRetries = 3)
+        val driver = startEdgeWithRetry(service, edgeBinary, headless, maxRetries = 3)
 
         println(s"[DriverManager] --- AFTER Edge started ---")
         logExistingProfiles()
-        println(s"[DriverManager] Final Edge args: ${edgeOptions.asMap()}")
 
         driver
 
@@ -83,35 +66,52 @@ object DriverManager {
     }
   }
 
-  /** Attempts to start EdgeDriver, retrying with new user-data-dir on failure */
-  private def startEdgeWithRetry(service: EdgeDriverService, edgeOptions: EdgeOptions, maxRetries: Int): WebDriver = {
+  private def startEdgeWithRetry(
+                                  service: EdgeDriverService,
+                                  edgeBinary: Option[String],
+                                  headless: Boolean,
+                                  maxRetries: Int
+                                ): WebDriver = {
     var lastEx: Throwable = null
+
     for (attempt <- 1 to maxRetries) {
+
       val profileDir = createProfileDir()
       println(s"[DriverManager] [Attempt $attempt] Trying EdgeDriver with profile: $profileDir")
 
-      edgeOptions.addArguments(s"--user-data-dir=${profileDir.toAbsolutePath}")
+      val edgeOptions = new EdgeOptions()
+      if (headless) edgeOptions.addArguments("--headless=new")
+
+      edgeOptions.addArguments(
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--remote-allow-origins=*",
+        s"--user-data-dir=${profileDir.toAbsolutePath}"
+      )
+      edgeBinary.foreach(edgeOptions.setBinary)
 
       try {
         val driver = new EdgeDriver(service, edgeOptions)
-        println(s"[DriverManager] EdgeDriver started successfully on attempt $attempt with $profileDir")
+        println(s"[DriverManager] ✅ EdgeDriver started successfully on attempt $attempt with $profileDir")
 
+        // Cleanup hook on JVM exit
         sys.addShutdownHook {
-          println(s"[DriverManager] --- BEFORE cleanup ---")
-          logExistingProfiles()
+          println(s"[DriverManager] 🧹 Cleaning up profile on shutdown: $profileDir")
           cleanupProfile(profileDir)
-          println(s"[DriverManager] --- AFTER cleanup ---")
-          logExistingProfiles()
         }
 
         return driver
       } catch {
         case ex: Throwable =>
           lastEx = ex
-          println(s"[DriverManager] [Attempt $attempt] Failed to start EdgeDriver: ${ex.getMessage}")
+          println(s"[DriverManager] ❌ Failed to start EdgeDriver on attempt $attempt: ${ex.getMessage}")
+          ex.printStackTrace()
           cleanupProfile(profileDir)
       }
     }
+
     throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastEx)
   }
 
@@ -124,7 +124,6 @@ object DriverManager {
     dir
   }
 
-  /** Logs all /tmp/edge-profile-* directories */
   private def logExistingProfiles(): Unit = {
     val tmpDir = Paths.get("/tmp")
     if (Files.exists(tmpDir)) {
@@ -137,9 +136,7 @@ object DriverManager {
         println("[DriverManager] Existing edge-profile-* directories:")
         profiles.foreach(p => println(s"  - $p"))
       }
-    } else {
-      println("[DriverManager] /tmp does not exist or is not accessible.")
-    }
+    } else println("[DriverManager] /tmp does not exist or is not accessible.")
   }
 
   private def cleanupProfile(dir: Path): Unit = {
@@ -154,6 +151,6 @@ object DriverManager {
 
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
-    if (!file.delete()) println(s"[DriverManager] Warning: could not delete ${file.getAbsolutePath}")
+    if (file.exists() && !file.delete()) println(s"[DriverManager] Warning: could not delete ${file.getAbsolutePath}")
   }
 }
