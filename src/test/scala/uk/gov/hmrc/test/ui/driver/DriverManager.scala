@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import scala.jdk.CollectionConverters._
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
@@ -11,7 +12,6 @@ import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
 object DriverManager {
 
-  // Global counter to help track unique profile directories across threads
   private val profileCounter = new AtomicInteger(0)
 
   def instance: WebDriver = {
@@ -41,13 +41,6 @@ object DriverManager {
         val edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        // Option A: Logging + retry wrapper
-        val uniqueProfileDir: Path = createProfileDirWithRetry()
-
-        // Option B: Force separate temp directory to isolate Jenkins builds
-        edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
-
-        // Option C: Add stability-related flags for Edge in CI environments
         edgeOptions.addArguments(
           "--no-first-run",
           "--no-default-browser-check",
@@ -62,19 +55,13 @@ object DriverManager {
           .usingDriverExecutable(new File(driverPath))
           .build()
 
-        println(s"[DriverManager] Starting EdgeDriver with profile dir: ${uniqueProfileDir.toAbsolutePath}")
-        val driver = new EdgeDriver(service, edgeOptions)
+        println(s"[DriverManager] --- BEFORE starting Edge ---")
+        logExistingProfiles()
 
-        // Register shutdown cleanup
-        sys.addShutdownHook {
-          try {
-            println(s"[DriverManager] Cleaning up profile dir: ${uniqueProfileDir.toAbsolutePath}")
-            deleteRecursively(uniqueProfileDir.toFile)
-          } catch {
-            case ex: Exception =>
-              println(s"[DriverManager] Failed to delete temp profile: ${ex.getMessage}")
-          }
-        }
+        val driver = startEdgeWithRetry(service, edgeOptions, maxRetries = 3)
+
+        println(s"[DriverManager] --- AFTER Edge started ---")
+        logExistingProfiles()
 
         driver
 
@@ -93,33 +80,77 @@ object DriverManager {
     }
   }
 
-  /** Option A — Create unique Edge user profile dir with retry + log */
-  private def createProfileDirWithRetry(maxRetries: Int = 3): Path = {
-    val buildId = sys.env.getOrElse("BUILD_TAG", "local")
-    var lastEx: Exception = null
-
+  /** Attempts to start EdgeDriver, retrying with new user-data-dir on failure */
+  private def startEdgeWithRetry(service: EdgeDriverService, edgeOptions: EdgeOptions, maxRetries: Int): WebDriver = {
+    var lastEx: Throwable = null
     for (attempt <- 1 to maxRetries) {
-      val count = profileCounter.incrementAndGet()
-      val dir = Paths.get(s"/tmp/edge-profile-$buildId-${UUID.randomUUID().toString}")
+      val profileDir = createProfileDir()
+      println(s"[DriverManager] [Attempt $attempt] Trying EdgeDriver with profile: $profileDir")
+
+      edgeOptions.addArguments(s"--user-data-dir=${profileDir.toAbsolutePath}")
+
       try {
-        Files.createDirectories(dir)
-        val threadName = Thread.currentThread().getName
-        println(s"[DriverManager] [Attempt $attempt] Created profile dir #$count by thread '$threadName': $dir")
-        return dir
+        val driver = new EdgeDriver(service, edgeOptions)
+        println(s"[DriverManager] EdgeDriver started successfully on attempt $attempt with $profileDir")
+
+        sys.addShutdownHook {
+          println(s"[DriverManager] --- BEFORE cleanup ---")
+          logExistingProfiles()
+          cleanupProfile(profileDir)
+          println(s"[DriverManager] --- AFTER cleanup ---")
+          logExistingProfiles()
+        }
+
+        return driver
       } catch {
-        case ex: Exception =>
+        case ex: Throwable =>
           lastEx = ex
-          println(s"[DriverManager] [Attempt $attempt] Failed to create Edge profile dir: ${ex.getMessage}")
+          println(s"[DriverManager] [Attempt $attempt] Failed to start EdgeDriver: ${ex.getMessage}")
+          cleanupProfile(profileDir)
       }
     }
-    throw new RuntimeException(s"Failed to create Edge profile directory after $maxRetries attempts", lastEx)
+    throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastEx)
   }
 
-  /** Recursively delete profile directory */
+  private def createProfileDir(): Path = {
+    val buildId = sys.env.getOrElse("BUILD_TAG", "local")
+    val count = profileCounter.incrementAndGet()
+    val dir = Paths.get(s"/tmp/edge-profile-$buildId-${UUID.randomUUID()}")
+    Files.createDirectories(dir)
+    println(s"[DriverManager] Created Edge profile dir #$count: $dir")
+    dir
+  }
+
+  /** Logs all /tmp/edge-profile-* directories */
+  private def logExistingProfiles(): Unit = {
+    val tmpDir = Paths.get("/tmp")
+    if (Files.exists(tmpDir)) {
+      val profiles = Files.list(tmpDir).iterator().asScala
+        .filter(p => p.getFileName.toString.startsWith("edge-profile-"))
+        .toList
+      if (profiles.isEmpty)
+        println("[DriverManager] No edge-profile-* directories currently exist.")
+      else {
+        println("[DriverManager] Existing edge-profile-* directories:")
+        profiles.foreach(p => println(s"  - $p"))
+      }
+    } else {
+      println("[DriverManager] /tmp does not exist or is not accessible.")
+    }
+  }
+
+  private def cleanupProfile(dir: Path): Unit = {
+    try {
+      deleteRecursively(dir.toFile)
+      println(s"[DriverManager] Deleted Edge profile dir: $dir")
+    } catch {
+      case ex: Exception =>
+        println(s"[DriverManager] Failed to delete profile dir $dir: ${ex.getMessage}")
+    }
+  }
+
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
-    if (!file.delete()) {
-      println(s"[DriverManager] Warning: failed to delete ${file.getAbsolutePath}")
-    }
+    if (!file.delete()) println(s"[DriverManager] Warning: could not delete ${file.getAbsolutePath}")
   }
 }
