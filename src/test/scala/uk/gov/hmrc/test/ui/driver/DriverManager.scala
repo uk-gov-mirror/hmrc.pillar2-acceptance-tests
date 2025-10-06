@@ -42,11 +42,13 @@ object DriverManager {
         if (headless) edgeOptions.addArguments("--headless=new")
 
         edgeOptions.addArguments(
+          "--headless=new",
           "--no-first-run",
           "--no-default-browser-check",
           "--disable-dev-shm-usage",
           "--disable-gpu",
-          "--remote-allow-origins=*"
+          "--remote-allow-origins=*",
+          s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}"
         )
 
         edgeBinary.foreach(edgeOptions.setBinary)
@@ -62,6 +64,7 @@ object DriverManager {
 
         println(s"[DriverManager] --- AFTER Edge started ---")
         logExistingProfiles()
+        println(s"[DriverManager] Final Edge args: ${edgeOptions.asMap()}")
 
         driver
 
