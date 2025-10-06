@@ -11,7 +11,7 @@ import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
 
 object DriverManager {
 
-  // global counter for profile dirs
+  // Global counter to help track unique profile directories across threads
   private val profileCounter = new AtomicInteger(0)
 
   def instance: WebDriver = {
@@ -41,17 +41,20 @@ object DriverManager {
         val edgeOptions = new EdgeOptions()
         if (headless) edgeOptions.addArguments("--headless=new")
 
-        val uniqueProfileDir: Path = {
-          val count = profileCounter.incrementAndGet()
-          val buildId = sys.env.getOrElse("BUILD_TAG", "local")
-          val dir = Paths.get(s"/tmp/edge-profile-$buildId-${UUID.randomUUID().toString}")
-          Files.createDirectories(dir)
-          val threadName = Thread.currentThread().getName
-          println(s"[DriverManager] Profile dir #$count created by thread '$threadName': $dir")
-          dir
-        }
+        // Option A: Logging + retry wrapper
+        val uniqueProfileDir: Path = createProfileDirWithRetry()
 
+        // Option B: Force separate temp directory to isolate Jenkins builds
         edgeOptions.addArguments(s"--user-data-dir=${uniqueProfileDir.toAbsolutePath}")
+
+        // Option C: Add stability-related flags for Edge in CI environments
+        edgeOptions.addArguments(
+          "--no-first-run",
+          "--no-default-browser-check",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--remote-allow-origins=*"
+        )
 
         edgeBinary.foreach(edgeOptions.setBinary)
 
@@ -62,6 +65,7 @@ object DriverManager {
         println(s"[DriverManager] Starting EdgeDriver with profile dir: ${uniqueProfileDir.toAbsolutePath}")
         val driver = new EdgeDriver(service, edgeOptions)
 
+        // Register shutdown cleanup
         sys.addShutdownHook {
           try {
             println(s"[DriverManager] Cleaning up profile dir: ${uniqueProfileDir.toAbsolutePath}")
@@ -89,8 +93,33 @@ object DriverManager {
     }
   }
 
+  /** Option A — Create unique Edge user profile dir with retry + log */
+  private def createProfileDirWithRetry(maxRetries: Int = 3): Path = {
+    val buildId = sys.env.getOrElse("BUILD_TAG", "local")
+    var lastEx: Exception = null
+
+    for (attempt <- 1 to maxRetries) {
+      val count = profileCounter.incrementAndGet()
+      val dir = Paths.get(s"/tmp/edge-profile-$buildId-${UUID.randomUUID().toString}")
+      try {
+        Files.createDirectories(dir)
+        val threadName = Thread.currentThread().getName
+        println(s"[DriverManager] [Attempt $attempt] Created profile dir #$count by thread '$threadName': $dir")
+        return dir
+      } catch {
+        case ex: Exception =>
+          lastEx = ex
+          println(s"[DriverManager] [Attempt $attempt] Failed to create Edge profile dir: ${ex.getMessage}")
+      }
+    }
+    throw new RuntimeException(s"Failed to create Edge profile directory after $maxRetries attempts", lastEx)
+  }
+
+  /** Recursively delete profile directory */
   private def deleteRecursively(file: File): Unit = {
     if (file.isDirectory) file.listFiles().foreach(deleteRecursively)
-    file.delete()
+    if (!file.delete()) {
+      println(s"[DriverManager] Warning: failed to delete ${file.getAbsolutePath}")
+    }
   }
 }
