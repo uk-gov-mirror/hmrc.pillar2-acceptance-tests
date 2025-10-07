@@ -9,6 +9,7 @@ import org.openqa.selenium.WebDriver
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
+import scala.util.Try
 
 object DriverManager {
 
@@ -16,8 +17,11 @@ object DriverManager {
   private val maxRetries = 3
 
   def instance: WebDriver = {
-    val browser = sys.props.getOrElse("browser", sys.env.getOrElse("BROWSER_IMAGE",
-      throw new IllegalArgumentException("'browser' system property or BROWSER_IMAGE env var must be set"))).toLowerCase
+    val browser = sys.props.getOrElse(
+      "browser",
+      sys.env.getOrElse("BROWSER_IMAGE",
+        throw new IllegalArgumentException("'browser' system property or BROWSER_IMAGE env var must be set"))
+    ).toLowerCase
 
     val headless = sys.env.get("BROWSER_OPTION_HEADLESS")
       .orElse(sys.props.get("headless"))
@@ -25,10 +29,10 @@ object DriverManager {
       .toBoolean
 
     browser match {
-      case "edge"   => startEdge(headless)
-      case "chrome" => startChrome(headless)
-      case "firefox"=> startFirefox(headless)
-      case other    => throw new IllegalArgumentException(s"Unsupported browser: $other")
+      case "edge"    => startEdge(headless)
+      case "chrome"  => startChrome(headless)
+      case "firefox" => startFirefox(headless)
+      case other     => throw new IllegalArgumentException(s"Unsupported browser: $other")
     }
   }
 
@@ -51,13 +55,18 @@ object DriverManager {
 
     cleanupOldProfiles()
 
-    var lastEx: Throwable = null
-    for (attempt <- 1 to maxRetries) {
+    var driver: Option[EdgeDriver] = None
+    var lastError: Throwable = null
+
+    for (attempt <- 1 to maxRetries if driver.isEmpty) {
       val profileDir = createProfileDir()
       println(s"[DriverManager] [Attempt $attempt] Starting EdgeDriver with profile: $profileDir")
 
+      // Log /tmp before
+      logTmpContents("BEFORE")
+
       val options = new EdgeOptions()
-      if (headless) options.addArguments("--headless", "--disable-gpu")
+      if (headless) options.addArguments("--headless=new", "--disable-gpu")
 
       options.addArguments(
         "--no-sandbox",
@@ -74,31 +83,44 @@ object DriverManager {
       edgeBinary.foreach(options.setBinary)
 
       try {
-        val driver = new EdgeDriver(service, options)
+        val createdDriver = new EdgeDriver(service, options)
+        driver = Some(createdDriver)
         println(s"[DriverManager] ✅ EdgeDriver started successfully on attempt $attempt")
 
         Thread.sleep(2000)
-
-        driver.get("about:blank")
+        createdDriver.get("about:blank")
         println(s"[DriverManager] 🌐 Verified EdgeDriver session is responsive")
 
         sys.addShutdownHook {
-          println(s"[DriverManager] 🧹 Cleaning up profile on shutdown: $profileDir")
+          println(s"[DriverManager] 🧹 Cleaning up Edge profile on shutdown: $profileDir")
           cleanupProfile(profileDir)
         }
-        return driver
 
       } catch {
         case ex: Throwable =>
-          lastEx = ex
+          lastError = ex
           println(s"[DriverManager] ❌ Failed to start EdgeDriver on attempt $attempt: ${Option(ex.getMessage).getOrElse(ex.toString)}")
           ex.printStackTrace()
           cleanupProfile(profileDir)
           Thread.sleep(1500)
+      } finally {
+        logTmpContents("AFTER")
       }
     }
 
-    throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastEx)
+    driver.getOrElse(throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastError))
+  }
+
+  private def logTmpContents(stage: String): Unit = {
+    Try {
+      val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"))
+      val entries = if (Files.exists(tmpDir)) {
+        Files.list(tmpDir).iterator().asScala.map(_.toString).mkString("\n")
+      } else "(no tmp dir)"
+      println(s"[DriverManager] /tmp $stage:\n$entries")
+    }.recover { case ex =>
+      println(s"[DriverManager] Failed to list /tmp contents: ${ex.getMessage}")
+    }
   }
 
   private def cleanupOldProfiles(): Unit = {
@@ -114,7 +136,6 @@ object DriverManager {
     }
   }
 
-
   private def startChrome(headless: Boolean): WebDriver = {
     val chromeOptions = new ChromeOptions()
     if (headless) chromeOptions.addArguments("--headless=new")
@@ -128,23 +149,13 @@ object DriverManager {
   }
 
   private def createProfileDir(): Path = {
-    val dir = Files.createTempDirectory(s"edge-profile-${UUID.randomUUID()}")
+    val buildId = sys.env.getOrElse("BUILD_ID", "local")
+    val dir = Paths.get(System.getProperty("java.io.tmpdir"))
+      .resolve(s"edge-profile-$buildId-${System.currentTimeMillis()}-${UUID.randomUUID()}")
+    Files.createDirectories(dir)
     profileCounter.incrementAndGet()
     println(s"[DriverManager] Created Edge profile dir: $dir")
     dir
-  }
-
-  private def logExistingProfiles(): Unit = {
-    val tmpDir = Paths.get(System.getProperty("java.io.tmpdir"))
-    if (Files.exists(tmpDir)) {
-      val profiles = Files.list(tmpDir).iterator().asScala
-        .filter(p => p.getFileName.toString.startsWith("edge-profile-")).toList
-      if (profiles.isEmpty) println("[DriverManager] No existing edge-profile-* directories.")
-      else {
-        println("[DriverManager] Existing edge-profile-* directories:")
-        profiles.foreach(p => println(s"  - $p"))
-      }
-    }
   }
 
   private def cleanupProfile(dir: Path): Unit = {
