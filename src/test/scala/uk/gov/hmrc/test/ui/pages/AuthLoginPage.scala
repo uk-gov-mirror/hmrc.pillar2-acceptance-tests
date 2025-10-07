@@ -350,14 +350,48 @@ object AuthLoginPage extends BasePage with PageObject {
     clickSubmitButton()
   }
 
-  def agentLoginWithExistingEntity(enrolmentKey: String, identifierName: String, identifierValue: String): Unit = {
-    Nav.navigateTo(url)
-    Input.sendKeysByName(frontEndASAUrl, redirectUrlField)
-    Input.sendKeysById(enrolmentKeyField, enrolmentKey)
-    Input.sendKeysById(identifierNameField, identifierName)
-    Input.sendKeysById(identifierValueField, identifierValue)
-    selectAffinityGroupAgent()
+  import org.openqa.selenium.By
+  import org.openqa.selenium.WebDriver
+  import org.openqa.selenium.support.ui.{ExpectedConditions, WebDriverWait}
+  import java.time.Duration
+  import scala.util.Try
+
+  def agentLoginWithExistingEntity(
+                                    enrolmentKey: String,
+                                    identifierName: String,
+                                    identifierValue: String
+                                  )(implicit driver: WebDriver): Unit = {
+
+    val wait = new WebDriverWait(driver, Duration.ofSeconds(15))
+
+    Try {
+      Nav.navigateTo(url)
+
+      val redirectInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.name(redirectUrlField)))
+      redirectInput.clear()
+      redirectInput.sendKeys(frontEndASAUrl)
+
+      val enrolmentInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(enrolmentKeyField)))
+      enrolmentInput.clear()
+      enrolmentInput.sendKeys(enrolmentKey)
+
+      val nameInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(identifierNameField)))
+      nameInput.clear()
+      nameInput.sendKeys(identifierName)
+
+      val valueInput = wait.until(ExpectedConditions.presenceOfElementLocated(By.id(identifierValueField)))
+      valueInput.clear()
+      valueInput.sendKeys(identifierValue)
+
+      selectAffinityGroupAgent()
+    }.recover {
+      case ex =>
+        println("[agentLoginWithExistingEntity] ⚠️ Failed to fill login form: " + ex.getMessage)
+        println(driver.getPageSource.take(5000))
+        throw ex
+    }
   }
+
 
   def loginWithExistingEntityWithRFM(enrolmentKey: String, identifierName: String, identifierValue: String): Unit = {
     Nav.navigateTo(url)
