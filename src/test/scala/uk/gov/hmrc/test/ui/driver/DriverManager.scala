@@ -4,7 +4,7 @@ import org.openqa.selenium.{JavascriptExecutor, WebDriver}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
-import org.openqa.selenium.support.ui.WebDriverWait
+import org.openqa.selenium.support.ui.{ExpectedConditions, WebDriverWait}
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
@@ -18,6 +18,8 @@ object DriverManager {
 
   private val profileCounter = new AtomicInteger(0)
   private val maxRetries     = 3
+  private val defaultImplicitWait = Duration.ofSeconds(10)
+  private val defaultFluentWaitTimeout = Duration.ofSeconds(30)
 
   def instance: WebDriver = {
     val browser = sys.props.getOrElse(
@@ -46,6 +48,7 @@ object DriverManager {
       ))
 
     val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
+
     val service = new EdgeDriverService.Builder()
       .usingDriverExecutable(new File(driverPath))
       .usingAnyFreePort()
@@ -80,9 +83,7 @@ object DriverManager {
         "--disable-background-networking",
         "--disable-sync",
         "--disable-translate",
-        "--disable-features=VizDisplayCompositor,UseOzonePlatform",
-        "--disable-blink-features=AutomationControlled",
-        "--disable-features=RendererCodeIntegrity",
+        "--disable-features=VizDisplayCompositor,RendererCodeIntegrity",
         "--window-size=1920,1080",
         "--remote-allow-origins=*",
         s"--user-data-dir=${profileDir.toAbsolutePath}"
@@ -95,16 +96,8 @@ object DriverManager {
         driver = Some(createdDriver)
         println(s"[DriverManager] ✅ EdgeDriver started successfully on attempt $attempt")
 
-        createdDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2))
-
+        createdDriver.manage().timeouts().implicitlyWait(defaultImplicitWait)
         waitForPageLoad(createdDriver)
-
-        Try {
-          createdDriver.get("about:blank")
-          println(s"[DriverManager] 🌐 Edge session active (title: ${createdDriver.getTitle})")
-        }.recover {
-          case ex => println(s"[DriverManager] ⚠️ Unable to verify session: ${ex.getMessage}")
-        }
 
         sys.addShutdownHook {
           println(s"[DriverManager] 🧹 Cleaning up Edge profile on shutdown: $profileDir")
@@ -126,6 +119,35 @@ object DriverManager {
     driver.getOrElse(throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastError))
   }
 
+
+  private def startChrome(headless: Boolean): WebDriver = {
+    val chromeOptions = new ChromeOptions()
+    if (headless) chromeOptions.addArguments("--headless=new")
+    chromeOptions.addArguments(
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      "--disable-extensions",
+      "--window-size=1920,1080"
+    )
+    val driver = new ChromeDriver(chromeOptions)
+    driver.manage().timeouts().implicitlyWait(defaultImplicitWait)
+    waitForPageLoad(driver)
+    driver
+  }
+
+
+  private def startFirefox(headless: Boolean): WebDriver = {
+    val options = new FirefoxOptions()
+    if (headless) options.addArguments("--headless=new")
+    val driver = new FirefoxDriver(options)
+    driver.manage().timeouts().implicitlyWait(defaultImplicitWait)
+    waitForPageLoad(driver)
+    driver
+  }
+
+
   private def waitForPageLoad(driver: WebDriver, timeoutSeconds: Long = 30): Unit = {
     val wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds))
     wait.until(_ =>
@@ -134,7 +156,6 @@ object DriverManager {
         .asInstanceOf[String] == "complete"
     )
   }
-
 
   private def logTmpContents(stage: String): Unit = {
     Try {
@@ -185,17 +206,5 @@ object DriverManager {
     }
     if (file.exists() && !file.delete())
       println(s"[DriverManager] ⚠️ Warning: could not delete ${file.getAbsolutePath}")
-  }
-
-  private def startChrome(headless: Boolean): WebDriver = {
-    val chromeOptions = new ChromeOptions()
-    if (headless) chromeOptions.addArguments("--headless=new")
-    new ChromeDriver(chromeOptions)
-  }
-
-  private def startFirefox(headless: Boolean): WebDriver = {
-    val firefoxOptions = new FirefoxOptions()
-    if (headless) firefoxOptions.addArguments("--headless=new")
-    new FirefoxDriver(firefoxOptions)
   }
 }
