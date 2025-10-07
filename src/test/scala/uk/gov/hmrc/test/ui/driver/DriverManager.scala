@@ -15,7 +15,6 @@ object DriverManager {
   private val profileCounter = new AtomicInteger(0)
   private val maxRetries = 3
 
-  /** Returns a configured WebDriver instance based on environment or system property. */
   def instance: WebDriver = {
     val browser = sys.props.getOrElse("browser", sys.env.getOrElse("BROWSER_IMAGE",
       throw new IllegalArgumentException("'browser' system property or BROWSER_IMAGE env var must be set"))).toLowerCase
@@ -41,7 +40,14 @@ object DriverManager {
       ))
 
     val edgeBinary = sys.env.get("EDGE_BINARY").orElse(sys.props.get("edge.binary"))
-    val service = new EdgeDriverService.Builder().usingDriverExecutable(new File(driverPath)).build()
+    val service = new EdgeDriverService.Builder()
+      .usingDriverExecutable(new File(driverPath))
+      .usingAnyFreePort()
+      .withSilent(true)
+      .build()
+
+    println(s"[DriverManager] Using EdgeDriver binary: $driverPath")
+    edgeBinary.foreach(b => println(s"[DriverManager] Using Edge binary override: $b"))
 
     cleanupOldProfiles()
 
@@ -49,33 +55,46 @@ object DriverManager {
     for (attempt <- 1 to maxRetries) {
       val profileDir = createProfileDir()
       println(s"[DriverManager] [Attempt $attempt] Starting EdgeDriver with profile: $profileDir")
-      val edgeOptions = new EdgeOptions()
 
-      if (headless) edgeOptions.addArguments("--headless")
-      edgeOptions.addArguments(
+      val options = new EdgeOptions()
+      if (headless) options.addArguments("--headless", "--disable-gpu")
+
+      options.addArguments(
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
         "--no-first-run",
         "--no-default-browser-check",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-sandbox",
+        "--disable-background-networking",
+        "--disable-sync",
         "--remote-allow-origins=*",
         s"--user-data-dir=${profileDir.toAbsolutePath}"
       )
-      edgeBinary.foreach(edgeOptions.setBinary)
+      edgeBinary.foreach(options.setBinary)
 
       try {
-        val driver = new EdgeDriver(service, edgeOptions)
+        val driver = new EdgeDriver(service, options)
         println(s"[DriverManager] ✅ EdgeDriver started successfully on attempt $attempt")
+
+        Thread.sleep(2000)
+
+        driver.get("about:blank")
+        println(s"[DriverManager] 🌐 Verified EdgeDriver session is responsive")
+
         sys.addShutdownHook {
           println(s"[DriverManager] 🧹 Cleaning up profile on shutdown: $profileDir")
           cleanupProfile(profileDir)
         }
         return driver
+
       } catch {
         case ex: Throwable =>
           lastEx = ex
-          println(s"[DriverManager] ❌ Failed to start EdgeDriver on attempt $attempt: ${ex.getMessage}")
+          println(s"[DriverManager] ❌ Failed to start EdgeDriver on attempt $attempt: ${Option(ex.getMessage).getOrElse(ex.toString)}")
+          ex.printStackTrace()
           cleanupProfile(profileDir)
+          Thread.sleep(1500)
       }
     }
 
