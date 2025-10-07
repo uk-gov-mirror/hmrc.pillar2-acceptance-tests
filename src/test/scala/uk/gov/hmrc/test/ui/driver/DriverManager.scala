@@ -1,12 +1,14 @@
 package uk.gov.hmrc.test.ui.driver
 
-import org.openqa.selenium.WebDriver
+import org.openqa.selenium.{JavascriptExecutor, WebDriver}
 import org.openqa.selenium.chrome.{ChromeDriver, ChromeOptions}
 import org.openqa.selenium.edge.{EdgeDriver, EdgeDriverService, EdgeOptions}
 import org.openqa.selenium.firefox.{FirefoxDriver, FirefoxOptions}
+import org.openqa.selenium.support.ui.WebDriverWait
 
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
+import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import scala.jdk.CollectionConverters._
@@ -53,7 +55,7 @@ object DriverManager {
     println(s"[DriverManager] Using EdgeDriver binary: $driverPath")
     edgeBinary.foreach(b => println(s"[DriverManager] Using Edge binary override: $b"))
 
-    cleanupOldProfiles() // 🧹 clear stale ones first
+    cleanupOldProfiles()
 
     var driver: Option[EdgeDriver] = None
     var lastError: Throwable       = null
@@ -66,7 +68,6 @@ object DriverManager {
       val options = new EdgeOptions()
       if (headless) options.addArguments("--headless=new")
 
-      // 🧩 Hardened options for Jenkins/Linux CI
       options.addArguments(
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -80,6 +81,9 @@ object DriverManager {
         "--disable-sync",
         "--disable-translate",
         "--disable-features=VizDisplayCompositor,UseOzonePlatform",
+        "--disable-blink-features=AutomationControlled",
+        "--disable-features=RendererCodeIntegrity",
+        "--window-size=1920,1080",
         "--remote-allow-origins=*",
         s"--user-data-dir=${profileDir.toAbsolutePath}"
       )
@@ -91,7 +95,10 @@ object DriverManager {
         driver = Some(createdDriver)
         println(s"[DriverManager] ✅ EdgeDriver started successfully on attempt $attempt")
 
-        // Check it’s alive
+        createdDriver.manage().timeouts().implicitlyWait(Duration.ofSeconds(2))
+
+        waitForPageLoad(createdDriver)
+
         Try {
           createdDriver.get("about:blank")
           println(s"[DriverManager] 🌐 Edge session active (title: ${createdDriver.getTitle})")
@@ -99,7 +106,6 @@ object DriverManager {
           case ex => println(s"[DriverManager] ⚠️ Unable to verify session: ${ex.getMessage}")
         }
 
-        // Cleanup on Jenkins shutdown
         sys.addShutdownHook {
           println(s"[DriverManager] 🧹 Cleaning up Edge profile on shutdown: $profileDir")
           cleanupProfile(profileDir)
@@ -119,6 +125,16 @@ object DriverManager {
 
     driver.getOrElse(throw new RuntimeException(s"Failed to start EdgeDriver after $maxRetries attempts", lastError))
   }
+
+  private def waitForPageLoad(driver: WebDriver, timeoutSeconds: Long = 30): Unit = {
+    val wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds))
+    wait.until(_ =>
+      driver.asInstanceOf[JavascriptExecutor]
+        .executeScript("return document.readyState")
+        .asInstanceOf[String] == "complete"
+    )
+  }
+
 
   private def logTmpContents(stage: String): Unit = {
     Try {
