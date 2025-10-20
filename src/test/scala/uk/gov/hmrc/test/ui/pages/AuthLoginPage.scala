@@ -63,21 +63,21 @@ object AuthLoginPage extends BrowserDriver with PageObject {
   val delegatedAuthRuleField: String        = "delegatedEnrolment[0].delegatedAuthRule"
   val addDelegatedEnrolmentCTA: String      = "#js-add-delegated-enrolment"
 
-  def loginWithUser(name: String): Unit = {
+  def loginWithUser(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginWithUserToRFM(name: String): Unit = {
+  def loginWithUserToRFM(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(rfmUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginWithUserToRFMWithCredId(name: String, credId: String): Unit = {
+  def loginWithUserToRFMWithCredId(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(rfmUrl, redirectUrlField)
@@ -85,7 +85,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginAsUserWithCredId(name: String, credId: String): Unit = {
+  def loginAsUserWithCredId(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndUrl, redirectUrlField)
@@ -93,7 +93,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToOrgWithCredID(name: String, credId: String): Unit = {
+  def loginToOrgWithCredID(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndUPEOrgTypeUrl, redirectUrlField)
@@ -101,7 +101,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToNfmOrgWithCredID(name: String, credId: String): Unit = {
+  def loginToNfmOrgWithCredID(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndNFMOrgTypeUrl, redirectUrlField)
@@ -109,7 +109,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToRegWithCredID(name: String, credId: String): Unit = {
+  def loginToRegWithCredID(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndUPERegTypeUrl, redirectUrlField)
@@ -117,7 +117,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToSubscribe(name: String): Unit = {
+  def loginToSubscribe(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndSubscribeUrl, redirectUrlField)
     selectAffinityGroupOrg()
@@ -131,7 +131,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
 
   def clickSubmitButton(): Unit = Find.findById("submit").click()
 
-  def loginUsingBta(name: String): Unit = {
+  def loginUsingBta(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndBtaUrl, redirectUrlField)
     selectAffinityGroupOrg()
@@ -153,7 +153,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToUPEName(name: String, credId: String): Unit = {
+  def loginToUPEName(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndNameUrl, redirectUrlField)
@@ -161,7 +161,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToNFMNameWithCredID(name: String, credId: String): Unit = {
+  def loginToNFMNameWithCredID(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndNFMNameUrl, redirectUrlField)
@@ -169,7 +169,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToCA(name: String, credId: String): Unit = {
+  def loginToCA(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndCAUrl, redirectUrlField)
@@ -177,7 +177,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToNFMCA(name: String, credId: String): Unit = {
+  def loginToNFMCA(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndNFMCAUrl, redirectUrlField)
@@ -185,7 +185,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToFDCA(name: String, credId: String): Unit = {
+  def loginToFDCA(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndFDCAUrl, redirectUrlField)
@@ -193,7 +193,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToCDCA(name: String, credId: String): Unit = {
+  def loginToCDCA(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndCDCAUrl, redirectUrlField)
@@ -201,7 +201,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToFinalCA(name: String, credId: String): Unit = {
+  def loginToFinalCA(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndFinalReviewCAUrl, redirectUrlField)
@@ -209,7 +209,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToUPEWithCredID(name: String, credId: String): Unit = {
+  def loginToUPEWithCredID(credId: String): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysById(credIdField, credId)
     Input.sendKeysByName(frontEndUPEUrl, redirectUrlField)
@@ -217,20 +217,20 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginAsInd(name: String): Unit = {
+  def loginAsInd(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndUrl, redirectUrlField)
     clickSubmitButton()
   }
 
-  def loginAsOrgToASA(name: String): Unit = {
+  def loginAsOrgToASA(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndASAUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginAsIndToASA(name: String): Unit = {
+  def loginAsIndToASA(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndASAUrl, redirectUrlField)
     selectAffinityGroupIndividual()
@@ -240,7 +240,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
   private def selectAffinityGroupIndividual(): Unit =
     new Select(findAffinityGroup()).selectByVisibleText("Individual")
 
-  def loginAsAssistantToASA(name: String): Unit = {
+  def loginAsAssistantToASA(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndASAUrl, redirectUrlField)
     selectAffinityGroupOrg()
@@ -248,13 +248,13 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginAsIndToRFM(name: String): Unit = {
+  def loginAsIndToRFM(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(rfmUrl, redirectUrlField)
     clickSubmitButton()
   }
 
-  def loginAsAgent(name: String): Unit = {
+  def loginAsAgent(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndUrl, redirectUrlField)
     selectAffinityGroupAgent()
@@ -264,14 +264,14 @@ object AuthLoginPage extends BrowserDriver with PageObject {
   private def selectAffinityGroupAgent(): Unit =
     new Select(findAffinityGroup()).selectByVisibleText("Agent")
 
-  def loginAsAgentToRFM(name: String): Unit = {
+  def loginAsAgentToRFM(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(rfmUrl, redirectUrlField)
     selectAffinityGroupAgent()
     clickSubmitButton()
   }
 
-  def loginAssistant(name: String): Unit = {
+  def loginAssistant(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndUrl, redirectUrlField)
     selectAffinityGroupOrg()
@@ -284,7 +284,7 @@ object AuthLoginPage extends BrowserDriver with PageObject {
 
   private def findCredentialRole() = Find.findByName("credentialRole")
 
-  def loginAssistantToRFM(name: String): Unit = {
+  def loginAssistantToRFM(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(rfmUrl, redirectUrlField)
     selectAffinityGroupOrg()
@@ -292,28 +292,28 @@ object AuthLoginPage extends BrowserDriver with PageObject {
     clickSubmitButton()
   }
 
-  def loginToNFMName(name: String): Unit = {
+  def loginToNFMName(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndNFMNameUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginToNFMAddress(name: String): Unit = {
+  def loginToNFMAddress(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndNFMAddressUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginToNFMContactName(name: String): Unit = {
+  def loginToNFMContactName(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndNFMContactNameUrl, redirectUrlField)
     selectAffinityGroupOrg()
     clickSubmitButton()
   }
 
-  def loginToNFMContactEmail(name: String): Unit = {
+  def loginToNFMContactEmail(): Unit = {
     Nav.navigateTo(url)
     Input.sendKeysByName(frontEndNFMContactEmailUrl, redirectUrlField)
     selectAffinityGroupOrg()

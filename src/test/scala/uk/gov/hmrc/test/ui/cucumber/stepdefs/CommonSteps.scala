@@ -29,33 +29,33 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
 
   Given("""^(.*) logs in to register for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginWithUser(name)
-      case "Individual User"   => AuthLoginPage.loginAsInd(name)
-      case "Agent User"        => AuthLoginPage.loginAsAgent(name)
-      case "Assistant User"    => AuthLoginPage.loginAssistant(name)
+      case "Organisation User" => AuthLoginPage.loginWithUser()
+      case "Individual User"   => AuthLoginPage.loginAsInd()
+      case "Agent User"        => AuthLoginPage.loginAsAgent()
+      case "Assistant User"    => AuthLoginPage.loginAssistant()
     }
   }
 
   Given("""^(.*) logs in to register for Pillar2 Agent service$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginAsOrgToASA(name)
-      case "Individual User"   => AuthLoginPage.loginAsIndToASA(name)
-      case "Assistant User"    => AuthLoginPage.loginAsAssistantToASA(name)
+      case "Organisation User" => AuthLoginPage.loginAsOrgToASA()
+      case "Individual User"   => AuthLoginPage.loginAsIndToASA()
+      case "Assistant User"    => AuthLoginPage.loginAsAssistantToASA()
 
     }
   }
 
   Given("""^(.*) logs in to subscribe for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToSubscribe(name)
-      case _                   => AuthLoginPage.loginToSubscribe(name)
+      case "Organisation User" => AuthLoginPage.loginToSubscribe()
+      case _                   => AuthLoginPage.loginToSubscribe()
     }
   }
 
   Given("""^(.*) logs in with BTA for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginUsingBta(name)
-      case _                   => AuthLoginPage.loginToSubscribe(name)
+      case "Organisation User" => AuthLoginPage.loginUsingBta()
+      case _                   => AuthLoginPage.loginToSubscribe()
     }
   }
 
@@ -69,61 +69,61 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
 
   Given("""^(.*) logs in as upe with credId (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToUPEWithCredID(name, credId)
-      case _                   => AuthLoginPage.loginToUPEWithCredID(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToUPEWithCredID(credId)
+      case _                   => AuthLoginPage.loginToUPEWithCredID(credId)
     }
   }
 
   Given("""^(.*) logs in with credId (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginAsUserWithCredId(name, credId)
-      case _                   => AuthLoginPage.loginAsUserWithCredId(name, credId)
+      case "Organisation User" => AuthLoginPage.loginAsUserWithCredId(credId)
+      case _                   => AuthLoginPage.loginAsUserWithCredId(credId)
     }
   }
 
   Given("""^(.*) logs in to upe org page with CredID (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToOrgWithCredID(name, credId)
-      case _                   => AuthLoginPage.loginToOrgWithCredID(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToOrgWithCredID(credId)
+      case _                   => AuthLoginPage.loginToOrgWithCredID(credId)
     }
   }
 
   Given("""^(.*) logs in to nfm org page with CredID (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNfmOrgWithCredID(name, credId)
-      case _                   => AuthLoginPage.loginToNfmOrgWithCredID(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToNfmOrgWithCredID(credId)
+      case _                   => AuthLoginPage.loginToNfmOrgWithCredID(credId)
     }
 
   }
 
   Given("""^(.*) logs in to upe registered in UK page with CredID (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToRegWithCredID(name, credId)
-      case _                   => AuthLoginPage.loginToRegWithCredID(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToRegWithCredID(credId)
+      case _                   => AuthLoginPage.loginToRegWithCredID(credId)
     }
   }
 
   Given("""^(.*) logs in to upe name page with CredID (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToUPEName(name, credId)
-      case _                   => AuthLoginPage.loginToUPEName(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToUPEName(credId)
+      case _                   => AuthLoginPage.loginToUPEName(credId)
     }
   }
 
   Given("""^(.*) logs in to nfm name page with CredID (.*) for Pillar2$""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNFMNameWithCredID(name, credId)
-      case _                   => AuthLoginPage.loginToNFMNameWithCredID(name, credId)
+      case "Organisation User" => AuthLoginPage.loginToNFMNameWithCredID(credId)
+      case _                   => AuthLoginPage.loginToNFMNameWithCredID(credId)
     }
   }
 
   Given("""^Organisation User navigates to (.*) check your answer page with credId (.*)$""") { (name: String, credId: String) =>
     name match {
-      case "UPE"                      => AuthLoginPage.loginToCA(name, credId)
-      case "NFM"                      => AuthLoginPage.loginToNFMCA(name, credId)
-      case "FD"                       => AuthLoginPage.loginToFDCA(name, credId)
-      case "Contact Details"          => AuthLoginPage.loginToCDCA(name, credId)
-      case "Final Check Your Answers" => AuthLoginPage.loginToFinalCA(name, credId)
+      case "UPE"                      => AuthLoginPage.loginToCA(credId)
+      case "NFM"                      => AuthLoginPage.loginToNFMCA(credId)
+      case "FD"                       => AuthLoginPage.loginToFDCA(credId)
+      case "Contact Details"          => AuthLoginPage.loginToCDCA(credId)
+      case "Final Check Your Answers" => AuthLoginPage.loginToFinalCA(credId)
     }
   }
 
@@ -139,11 +139,11 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
     Check.checkBodyText(text)
   }
 
-  When("""^(I click Continue button|click Confirm and send|click Try Again)$""") { (negate: String) =>
+  When("""^(I click Continue button|click Confirm and send|click Try Again)$""") { () =>
     Input.clickSubmit()
   }
 
-  When("""^(I click on Continue button)""") { (negate: String) =>
+  When("""^(I click on Continue button)""") { () =>
     InitialGuidancePage.clickContinue()
   }
 
@@ -163,7 +163,7 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
     BtnMultipleAccountingPage.selectPreviousAccountingPeriod()
   }
 
-  When("""^(I click on Country selected)""") { (negate: String) =>
+  When("""^(I click on Country selected)""") { () =>
     UPEAddressPage.clickCountrySelected()
   }
 
@@ -200,15 +200,15 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
     }
   }
 
-  And("""^I should see error message (.*) on the Contact details display Page$""") { (error: String, page: String) =>
+  And("""^I should see error message (.*) on the Contact details display Page$""") { (error: String) =>
         Wait.waitForTagNameToBeRefreshed("h1")
         Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorSummary)
 
         Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorLink)
-        getTextOf(By cssSelector (ContactDetailsDisplayPage.errorLink)) should be(error)
+        getTextOf(By cssSelector ContactDetailsDisplayPage.errorLink) should be(error)
 
         Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorMessage)
-        getTextOf(By cssSelector (ContactDetailsDisplayPage.errorMessage)) should include(error)
+        getTextOf(By cssSelector ContactDetailsDisplayPage.errorMessage) should include(error)
   }
 
   Then("""^The caption must be (.*)$""") { caption: String =>

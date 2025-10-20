@@ -196,7 +196,7 @@ class PaymentSteps extends CommonFunctions {
       case "Non UK" =>
         Nav.navigateTo(NonUKBankAccountPaymentPage.url)
       case "UK" =>
-        Nav.navigateTo((UKBankAccountPaymentPage.url))
+        Nav.navigateTo(UKBankAccountPaymentPage.url)
     }
   }
 
@@ -208,7 +208,7 @@ class PaymentSteps extends CommonFunctions {
     UKBankAccountPaymentPage.clickContinue()
   }
 
-  And("""^(I navigate from Contact page to CYA page)""") { (negate: String) =>
+  And("""^(I navigate from Contact page to CYA page)""") { () =>
     for (i <- 1 to 4) {
       UKBankAccountPaymentPage.clickContinue()
     }

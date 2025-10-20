@@ -32,10 +32,10 @@ class RFMSteps extends EN with ScalaDsl with BrowserDriver with CommonFunctions 
 
   Given("""^(.*) logs in with rfm URL to Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginWithUserToRFM(name)
-      case "Individual User"   => AuthLoginPage.loginAsIndToRFM(name)
-      case "Agent User"        => AuthLoginPage.loginAsAgentToRFM(name)
-      case "Assistant User"    => AuthLoginPage.loginAssistantToRFM(name)
+      case "Organisation User" => AuthLoginPage.loginWithUserToRFM()
+      case "Individual User"   => AuthLoginPage.loginAsIndToRFM()
+      case "Agent User"        => AuthLoginPage.loginAsAgentToRFM()
+      case "Assistant User"    => AuthLoginPage.loginAssistantToRFM()
 
     }
   }
@@ -154,8 +154,8 @@ class RFMSteps extends EN with ScalaDsl with BrowserDriver with CommonFunctions 
 
   Given("""^(.*) logs in to RFM with credId (.*) for Pillar2""") { (name: String, credId: String) =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginWithUserToRFMWithCredId(name, credId)
-      case _                   => AuthLoginPage.loginWithUserToRFMWithCredId(name, credId)
+      case "Organisation User" => AuthLoginPage.loginWithUserToRFMWithCredId(credId)
+      case _                   => AuthLoginPage.loginWithUserToRFMWithCredId(credId)
     }
   }
 

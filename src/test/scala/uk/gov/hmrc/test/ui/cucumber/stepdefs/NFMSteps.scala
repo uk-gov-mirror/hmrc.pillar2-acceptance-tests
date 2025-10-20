@@ -22,29 +22,29 @@ class NFMSteps extends CommonFunctions {
 
   Given("""^(.*) logs in NFM name page for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNFMName(name)
-      case _                   => AuthLoginPage.loginToNFMName(name)
+      case "Organisation User" => AuthLoginPage.loginToNFMName()
+      case _                   => AuthLoginPage.loginToNFMName()
     }
   }
 
   Given("""^(.*) logs in NFM address page for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNFMAddress(name)
-      case _                   => AuthLoginPage.loginToNFMAddress(name)
+      case "Organisation User" => AuthLoginPage.loginToNFMAddress()
+      case _                   => AuthLoginPage.loginToNFMAddress()
     }
   }
 
   Given("""^(.*) logs in NFM Contact Name page for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNFMContactName(name)
-      case _                   => AuthLoginPage.loginToNFMContactName(name)
+      case "Organisation User" => AuthLoginPage.loginToNFMContactName()
+      case _                   => AuthLoginPage.loginToNFMContactName()
     }
   }
 
   Given("""^(.*) logs in NFM Contact Email page for Pillar2$""") { name: String =>
     name match {
-      case "Organisation User" => AuthLoginPage.loginToNFMContactEmail(name)
-      case _                   => AuthLoginPage.loginToNFMContactEmail(name)
+      case "Organisation User" => AuthLoginPage.loginToNFMContactEmail()
+      case _                   => AuthLoginPage.loginToNFMContactEmail()
     }
   }
 }

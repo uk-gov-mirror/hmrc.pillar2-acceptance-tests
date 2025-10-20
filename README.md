@@ -131,7 +131,7 @@ It is built using the following:
 ### Getting started
 - Ensure that you have installed IntelliJ Idea
 - Once you have installed IntelliJ IDEA, install plugins: Cucumber for scala, Gherkin.
-- Make sure you have cloned the below respositories
+- Make sure you have cloned the below repositories
   - https://github.com/hmrc/pillar2-frontend
   - https://github.com/hmrc/pillar2
   - https://github.com/hmrc/pillar2-stubs

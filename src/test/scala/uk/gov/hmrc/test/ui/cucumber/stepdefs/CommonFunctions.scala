@@ -148,7 +148,7 @@ trait CommonFunctions
       case "RFM No Return Back Error Page"              => RFMNoReturnBackErrorPage
       case "ASA Not Authorised page"                    => ASANotAuthorisedPage
       case "RFM Confirmation Page"                      => RFMConfirmationPage
-      case "Amend API error Page for RFM"               => AmendAPIerrorPage_RFM
+      case "Amend API error Page for RFM"               => AmendAPIErrorPage_RFM
       case "ASA Individual KB Page"                     => ASAIndividualKBPage
       case "ASA Organisation KB Page"                   => ASAOrganisationKBPage
       case "RFM journey recovery page"                  => RFMJourneyRecoveryPage
