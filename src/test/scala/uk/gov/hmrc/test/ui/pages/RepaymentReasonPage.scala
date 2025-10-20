@@ -21,8 +21,6 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 object RepaymentReasonPage extends PageObject {
   val url: String = s"$rootUrl" + "repayment/reason"
 
-  val errorMessage    = ".govuk-error-message"
-  val errorLink       = "[href='#value']"
   val reasonTextField = "#value"
   val charLimit       = ".govuk-character-count__status"
 }

@@ -20,7 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object RepaymentMethodPage extends PageObject {
   val url: String = s"$rootUrl" + "repayment/method"
-
-  val errorMessage = ".govuk-error-message"
-  val errorLink    = "[href*='#value_0']"
 }

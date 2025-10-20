@@ -20,7 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object UPEPhonePage extends PageObject {
   val url: String  = s"$rootUrl" + "business-matching/ultimate-parent/no-id/phone"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 }

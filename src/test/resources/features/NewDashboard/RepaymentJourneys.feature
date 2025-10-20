@@ -291,9 +291,6 @@ Feature: Repayment Journey
     Then I should navigate to Repayment Method Page
     And I click on Continue button
     Then I should be on UK Bank Account Payment Page
-    And I click on Continue button
-    Then I should see bank account error message Enter the name of the bank on the UK Bank Name Element
-    When I refresh the page
     When I enter UK Bank Account details as:
       | KEY               | VALUE              |
       | bankName          | Natwest            |

@@ -144,56 +144,8 @@ class UPESteps extends CommonFunctions {
     Check.checkOptionSelected(answer)
   }
 
-  And("""^I should see the (.*) field is pre-populated with (.*)$""") { (field: String, name: String) =>
-    field match {
-      case "UPE name" =>
-        assert(getAttributeOf(InputUPENamePage.nameField, "value").equals(name))
-      case "NFM name" =>
-        assert(getAttributeOf(InputUPENamePage.nameField, "value").equals(name))
-      case "Address Line 1" =>
-        assert(getAttributeOf(UPEAddressPage.addressLine1, "value").equals(name))
-      case "Address Line 2" =>
-        assert(getAttributeOf(UPEAddressPage.addressLine2, "value").equals(name))
-      case "City" =>
-        assert(getAttributeOf(UPEAddressPage.townOrCity, "value").equals(name))
-      case "Region" =>
-        assert(getAttributeOf(UPEAddressPage.region, "value").equals(name))
-        UPEEntityTypePage.clickContinue()
-      case "Postal Code" =>
-        assert(getAttributeOf(UPEAddressPage.postalCode, "value").equals(name))
-      case "Country" =>
-        assert(getAttributeOf(UPEAddressPage.country, "value").equals(name))
-      case "UPE Person/Team name" =>
-        assert(getAttributeOfId(UPEContactNamePage.contactName, "value").equals(name))
-      case "UPE Email address" =>
-        assert(getAttributeOfId(UPEContactEmailPage.emailField, "value").equals(name))
-      case "Phone number" =>
-        assert(getAttributeOf(InputUPEPhonePage.phoneNumber, "value").equals(name))
-      case "NFM Contact name" =>
-        assert(getAttributeOf(NFMContactNamePage.contactName, "value").equals(name))
-      case "NFM Contact Email" =>
-        assert(getAttributeOf(NFMContactEmailPage.contactEmail, "value").equals(name))
-      case "NFM Phone number" =>
-        assert(getAttributeOf(InputNFMPhonePage.phoneNumber, "value").equals(name))
-      case "Contact Name" =>
-        assert(getAttributeOf(ContactDetailsInputNamePage.contactName, "value").equals(name))
-      case "Contact Email" =>
-        assert(getAttributeOf(ContactDetailsInputEmailPage.contactEmail, "value").equals(name))
-      case "Contact Phone" =>
-        assert(getAttributeOf(ContactDetailsInputPhonePage.contactPhone, "value").equals(name))
-      case "Second Contact Name" =>
-        assert(getAttributeOf(SecondContactNamePage.contactName, "value").equals(name))
-      case "Second Contact Email" =>
-        assert(getAttributeOf(SecondContactEmailPage.contactEmail, "value").equals(name))
-      case "Second Contact Input" =>
-        assert(getAttributeOf(SecondContactInputPage.contactPhone, "value").equals(name))
-      case "Redirect URL" =>
-        assert(getAttributeOf(AuthLoginPage.redirectionUrlField, "value").contains(name))
-      case "PLRID" =>
-        assert(getAttributeOf(ASAPillar2InputPage.pillar2IDField, "value").equals(name))
-      case "UK Bank Name" =>
-        assert(getAttributeOf(UKBankAccountPaymentPage.UkBankName, "value").equals(name))
-    }
+  And("""^I should see the PLRID field is pre-populated with (.*)$""") { (name: String) =>
+    assert(getAttributeOf(ASAPillar2InputPage.pillar2IDField, "value").equals(name))
   }
 
   And("""^I select option (.*) and continue to GRS page$""") { (option: String) =>

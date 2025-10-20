@@ -20,7 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object NFMRegistrationPage extends PageObject {
   val url: String  = s"$rootUrl" + "business-matching/filing-member/nominate"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href='#nominateFilingMember_0']"
-  val errorMessage = ".govuk-error-message"
 }

@@ -23,7 +23,4 @@ object GlobalGrossRevenueEQPage extends PageObject {
 
   val eqForm       = "form[action*='eligibility']"
   val eq           = "form[action*='eligibility'] .govuk-fieldset"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 }

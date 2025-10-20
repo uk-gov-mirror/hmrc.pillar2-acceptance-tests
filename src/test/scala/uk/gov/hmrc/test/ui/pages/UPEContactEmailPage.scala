@@ -22,7 +22,4 @@ object UPEContactEmailPage extends PageObject {
   val url: String = s"$rootUrl" + "business-matching/ultimate-parent/no-id/input-email"
 
   val emailField   = "emailAddress"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href='#emailAddress']"
-  val errorMessage = "#emailAddress-error"
 }

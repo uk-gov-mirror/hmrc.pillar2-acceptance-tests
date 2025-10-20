@@ -23,9 +23,6 @@ object UPEEntityTypePage extends PageObject {
   val url: String = s"$rootUrl" + "business-matching/ultimate-parent/uk-based/entity-type"
 
   val continue     = "button.govuk-button"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 
   def clickContinue(): Unit = findByCss(continue).click()
 }

@@ -102,11 +102,6 @@ class TaskListSteps extends CommonFunctions {
 
   Then("""^I navigate back to TaskList Page from (.*) Page""") { (page: String) =>
     page match {
-      case "Name" =>
-        for (i <- 1 to 3) {
-          clickByCss(BusinessActivityEQPage.backLink)
-        }
-
       case "GRS" =>
         for (i <- 1 to 4) {
           clickByCss(BusinessActivityEQPage.backLink)

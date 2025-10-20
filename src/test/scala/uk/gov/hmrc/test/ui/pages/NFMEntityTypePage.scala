@@ -20,7 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object NFMEntityTypePage extends PageObject {
   val url: String  = s"$rootUrl" + "business-matching/filing-member/uk-based/entity-type"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 }

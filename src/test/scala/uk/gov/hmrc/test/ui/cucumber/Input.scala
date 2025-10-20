@@ -41,8 +41,6 @@ object Input extends BrowserDriver {
 
   def clickSubmit(): Unit = findById("submit").click()
 
-  def clickByXpath(id: String): Unit = findByXpath(id).click()
-
   def sendKeysById(id: String, value: String): Unit = {
     findById(id)
     findById(id).clear()

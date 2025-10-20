@@ -20,7 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object SecondContactDetailsDisplayPage extends PageObject {
   val url: String  = s"$rootUrl" + "contact-details/primary-contact"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 }

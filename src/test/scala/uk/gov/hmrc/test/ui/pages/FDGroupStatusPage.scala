@@ -20,8 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object FDGroupStatusPage extends PageObject {
   val url: String = s"$rootUrl" + "further-details/group-status"
-
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href*='#value']"
-  val errorMessage = ".govuk-error-message"
 }

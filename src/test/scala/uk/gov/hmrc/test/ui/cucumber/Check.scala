@@ -24,8 +24,6 @@ object Check extends BrowserDriver with Matchers {
 
   def checkH1(h1: String): Assertion = Find.findByTagName("h1").getText should include(h1)
 
-  def checkUrlContains(url: String): Assertion = Find.findURL() should include(url)
-
   def checkBodyText(t: String): Assertion = Find.findByTagName("body").getText should include(t)
 
   def assertNavigationToPage(page: PageObject): Boolean =

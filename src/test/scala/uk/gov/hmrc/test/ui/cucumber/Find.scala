@@ -34,12 +34,9 @@ object Find extends BrowserDriver {
 
   def findByCss(css: String): WebElement = find(By.cssSelector(css))
 
-  def findByXpath(id: String): WebElement = find(By.xpath(id))
-
   def findByTagName(tagName: String): WebElement = find(By.tagName(tagName))
 
   def findByLinkText(text: String): WebElement = find(By.linkText(text))
 
   def findURL(): String = driver.getCurrentUrl
-
 }

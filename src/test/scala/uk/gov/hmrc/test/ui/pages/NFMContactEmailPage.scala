@@ -21,7 +21,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 object NFMContactEmailPage extends PageObject {
   val url: String  = s"$rootUrl" + "business-matching/filing-member/no-id/input-email"
   val contactEmail = "[type='email']"
-  val errorSummary = ".govuk-error-summary__list"
-  val errorLink    = "[href='#emailAddress']"
-  val errorMessage = ".govuk-error-message"
 }

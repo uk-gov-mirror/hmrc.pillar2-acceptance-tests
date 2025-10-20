@@ -20,6 +20,4 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object BTAPillar2IDCheckPage extends PageObject {
   val url: String  = s"$rootUrl" + "bta/pillar2-id"
-  val errorLink    = "[href='#value_0']"
-  val errorMessage = ".govuk-error-message"
 }

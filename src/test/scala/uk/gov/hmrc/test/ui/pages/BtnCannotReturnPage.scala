@@ -21,10 +21,7 @@ import uk.gov.hmrc.test.ui.cucumber.PageObject
 
 object BtnCannotReturnPage extends PageObject {
   val url: String = s"$rootUrl" + "below-threshold-notification/cannot-return"
-
-  val header: String = "h1.govuk-heading-l"
   val startAgain     = ".govuk-button"
-  val backLink       = ".govuk-back-link"
 
   def clickStartAgain(): Unit = findByCss(startAgain).click()
 
