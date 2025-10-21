@@ -143,7 +143,7 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
     Input.clickSubmit()
   }
 
-  When("""^(I click on Continue button)""") { () =>
+  When("""I click on Continue button""") { () =>
     InitialGuidancePage.clickContinue()
   }
 
