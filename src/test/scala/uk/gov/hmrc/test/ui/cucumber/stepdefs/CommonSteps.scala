@@ -19,7 +19,7 @@ package uk.gov.hmrc.test.ui.cucumber.stepdefs
 import io.cucumber.scala.{EN, ScalaDsl}
 import org.openqa.selenium.By
 import org.scalatest.matchers.should.Matchers
-import uk.gov.hmrc.test.ui.cucumber.Input.getTextOf
+import uk.gov.hmrc.test.ui.cucumber.Input.{clickSubmit, getTextOf}
 import uk.gov.hmrc.test.ui.cucumber.Nav.{isVisible, navigateTo}
 import uk.gov.hmrc.test.ui.cucumber._
 import uk.gov.hmrc.test.ui.driver.BrowserDriver
@@ -139,19 +139,18 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
     Check.checkBodyText(text)
   }
 
-  When("""^(I click Continue button|click Confirm and send|click Try Again)$""") { () =>
-    Input.clickSubmit()
-  }
-
-  When("""I click on Continue button""") { () =>
-    InitialGuidancePage.clickContinue()
+  When("""^I click (.*)$""") { button: String =>
+    button match {
+      case "Continue button" => clickSubmit()
+      case "on Continue button" => InitialGuidancePage.clickContinue()
+    }
   }
 
   And("""^I click radio button for (.*)$""") { accountingPeriod: String =>
     BtnMultipleAccountingPage.selectAccountingPeriod(accountingPeriod)
   }
 
-  When("""^(I click on Country selected)""") { () =>
+  When("""^I click on Country selected""") { () =>
     UPEAddressPage.clickCountrySelected()
   }
 
@@ -189,14 +188,14 @@ class CommonSteps extends EN with ScalaDsl with BrowserDriver with Matchers {
   }
 
   And("""^I should see error message (.*) on the Contact details display Page$""") { (error: String) =>
-        Wait.waitForTagNameToBeRefreshed("h1")
-        Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorSummary)
+    Wait.waitForTagNameToBeRefreshed("h1")
+    Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorSummary)
 
-        Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorLink)
-        getTextOf(By cssSelector ContactDetailsDisplayPage.errorLink) should be(error)
+    Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorLink)
+    getTextOf(By cssSelector ContactDetailsDisplayPage.errorLink) should be(error)
 
-        Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorMessage)
-        getTextOf(By cssSelector ContactDetailsDisplayPage.errorMessage) should include(error)
+    Wait.waitForElementToPresentByCssSelector(ContactDetailsDisplayPage.errorMessage)
+    getTextOf(By cssSelector ContactDetailsDisplayPage.errorMessage) should include(error)
   }
 
   Then("""^The caption must be (.*)$""") { caption: String =>
